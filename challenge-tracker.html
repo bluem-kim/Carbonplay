@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Challenge - CarbonPlay</title>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="bg-base-200">
+  
+  <!-- Navbar -->
+  <div id="navbar-container"></div>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    
+    <!-- Challenge Header -->
+    <div id="challengeHeader" class="card bg-base-100 shadow-xl mb-6">
+      <div class="card-body">
+        <!-- Top toolbar -->
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div class="breadcrumbs text-sm">
+            <ul>
+              <li><a href="dashboard.html" class="link link-hover">Dashboard</a></li>
+              <li class="text-base-content/70">My Challenge</li>
+            </ul>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="history.back()">
+              <i class="fas fa-arrow-left mr-2"></i>
+              Back
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="location.reload()">
+              <i class="fas fa-rotate-right mr-2"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h1 class="text-3xl font-bold" id="challengeName">Loading...</h1>
+            <p class="text-gray-600 mt-2" id="challengeDescription"></p>
+          </div>
+          <div class="badge badge-lg badge-primary" id="challengeType"></div>
+        </div>
+
+        <!-- Progress Summary -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-title">Total Days</div>
+            <div class="stat-value text-2xl" id="totalDays">0</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-title">Completed</div>
+            <div class="stat-value text-2xl text-success" id="completedDays">0</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-title">Current Day</div>
+            <div class="stat-value text-2xl text-info" id="currentDay">0</div>
+          </div>
+          <div class="stat bg-base-200 rounded-lg p-4">
+            <div class="stat-title">Daily Goal</div>
+            <div class="stat-value text-xl" id="dailyGoal">0</div>
+            <div class="stat-desc" id="targetUnit"></div>
+          </div>
+        </div>
+
+        <!-- Overall Progress Bar -->
+        <div class="mt-4">
+          <div class="flex justify-between text-sm mb-1">
+            <span>Overall Progress</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <progress id="progressBar" class="progress progress-primary w-full" value="0" max="100" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></progress>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Tracking Calendar -->
+    <div class="card bg-base-100 shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title mb-2">
+          <i class="fas fa-calendar-days mr-2"></i>
+          Daily Progress Tracker
+        </h2>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap items-center gap-3 text-sm text-base-content/70 mb-4">
+          <div class="flex items-center gap-2"><span class="badge badge-success badge-sm"></span><span>Completed</span></div>
+          <div class="flex items-center gap-2"><span class="badge badge-info badge-sm"></span><span>Today / Unlocked</span></div>
+          <div class="flex items-center gap-2"><span class="badge badge-ghost badge-sm"></span><span>Locked</span></div>
+        </div>
+
+        <div id="daysContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Days will be dynamically inserted here -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Log Progress Modal -->
+  <dialog id="logModal" class="modal">
+    <div class="modal-box">
+      <form method="dialog">
+        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+      </form>
+      
+      <h3 class="font-bold text-lg mb-4">
+        <i class="fas fa-pen-to-square mr-2"></i>
+        Log Progress for Day <span id="modalDayNumber"></span>
+      </h3>
+
+      <form id="logForm" aria-label="Log daily progress form">
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Date</span>
+          </label>
+          <input type="text" id="modalLogDate" class="input input-bordered" readonly />
+        </div>
+
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Value <span id="modalUnit"></span></span>
+          </label>
+          <input 
+            type="number" 
+            step="0.01" 
+            id="modalValueLogged" 
+            class="input input-bordered" 
+            placeholder="Enter value"
+            inputmode="decimal"
+            min="0"
+            required 
+          />
+          <div class="label">
+            <span class="label-text-alt">Daily Goal: <span id="modalDailyGoal"></span> <span id="modalUnitAlt"></span></span>
+          </div>
+        </div>
+
+        <div class="form-control mb-4">
+          <label class="label">
+            <span class="label-text">Notes (Optional)</span>
+          </label>
+          <textarea 
+            id="modalNotes" 
+            class="textarea textarea-bordered" 
+            rows="3"
+            placeholder="Add any notes about today..."
+          ></textarea>
+        </div>
+
+        <div class="alert alert-info mb-4">
+          <i class="fas fa-circle-info"></i>
+          <span id="modalHelpText"></span>
+        </div>
+
+        <div class="modal-action">
+          <button type="button" class="btn" onclick="closeLogModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save mr-2"></i>
+            Save Progress
+          </button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <script src="js/navbar.js"></script>
+  <script src="js/challenge-tracker.js"></script>
+</body>
+</html>

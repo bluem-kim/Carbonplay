@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard | CarbonPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+</head>
+<body data-theme="forest">
+    <div id="navbar-placeholder"></div>
+
+    <div class="bg-base-200 min-h-screen py-8">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="card bg-base-100 shadow">
+                <div class="card-body p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h1 class="text-2xl font-bold flex items-center gap-2">
+                            <i class="fas fa-trophy text-warning"></i>
+                            Leaderboard
+                        </h1>
+                        <div class="tabs tabs-boxed">
+                            <button class="tab tab-active tab-btn" data-type="scenarios">Most Active</button>
+                            <button class="tab tab-btn" data-type="reduction">Eco Champions</button>
+                            <button class="tab tab-btn" data-type="activities">Activity Leaders</button>
+                            <button class="tab tab-btn" data-type="eco_saver">Eco Saver</button>
+                        </div>
+                    </div>
+                    <div id="leaderboardContainer" class="mt-4">
+                        <div class="text-sm text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar('leaderboard');</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadLeaderboard('scenarios');
+
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('tab-active'));
+                    this.classList.add('tab-active');
+                    loadLeaderboard(this.dataset.type);
+                });
+            });
+        });
+
+        async function loadLeaderboard(type = 'scenarios') {
+            const container = document.getElementById('leaderboardContainer');
+            if (!container) return;
+
+            container.innerHTML = `<div class="text-sm text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>`;
+
+            const fetchType = async (t) => {
+                const token = localStorage.getItem('token');
+                const res = await fetch(`http://localhost:3000/api/leaderboard?type=${t}&limit=20`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error(`Failed to load leaderboard: ${t}`);
+                const payload = await res.json();
+                const arr = payload?.data?.leaderboard || [];
+                return { list: arr, type: t };
+            };
+
+            try {
+                let result = await fetchType(type);
+                if (result.list.length === 0) {
+                    if (type === 'eco_saver') {
+                        // fallbacks: reduction -> activities -> scenarios
+                        result = await fetchType('reduction').catch(() => ({ list: [], type: 'reduction' }));
+                        if (result.list.length === 0) {
+                            result = await fetchType('activities').catch(() => ({ list: [], type: 'activities' }));
+                        }
+                        if (result.list.length === 0) {
+                            result = await fetchType('scenarios').catch(() => ({ list: [], type: 'scenarios' }));
+                        }
+                    } else if (type === 'reduction') {
+                        result = await fetchType('activities').catch(() => ({ list: [], type: 'activities' }));
+                        if (result.list.length === 0) {
+                            result = await fetchType('scenarios').catch(() => ({ list: [], type: 'scenarios' }));
+                        }
+                    }
+                }
+                displayLeaderboard(result.list, result.type);
+            } catch (error) {
+                container.innerHTML = `<div class="text-center text-muted"><i class="fas fa-users"></i><p>Unable to load leaderboard</p></div>`;
+            }
+        }
+
+        function displayLeaderboard(leaderboard, type) {
+            const container = document.getElementById('leaderboardContainer');
+            if (!container) return;
+
+            if (!leaderboard || leaderboard.length === 0) {
+                container.innerHTML = `<div class="text-center text-muted"><i class="fas fa-users"></i><p>No rankings yet</p><small>Create scenarios to see rankings!</small></div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="space-y-3">` + leaderboard
+                .map((user) => {
+                    const rawIcon = (user.badge && user.badge.icon) || 'fas fa-user';
+                    let iconCls = rawIcon.trim();
+                    if (!/^fa[srlb]?\s+fa-/.test(iconCls)) {
+                        iconCls = 'fas ' + iconCls;
+                    }
+
+                    const username = String(user.username || '').trim();
+                    const secondary = `${user.secondaryMetric} ${user.secondaryLabel}`;
+                    const metric = user.metric;
+                    const metricLabel = user.metricLabel;
+
+                                        const avatarHtml = user.profile_picture
+                                                ? `<div class="w-12 h-12 rounded-full overflow-hidden bg-base-300 flex items-center justify-center">
+                                                         <img src="http://localhost:3000${user.profile_picture}" alt="${username}" class="w-full h-full object-cover"/>
+                                                     </div>`
+                                                : `<div class="w-12 h-12 rounded-full bg-primary text-white grid place-items-center overflow-hidden">
+                                                         <i class="${iconCls} fa-fw text-sm leading-none" aria-hidden="true"></i>
+                                                     </div>`;
+
+                    return `
+                    <div class="w-full p-4 bg-base-100 border border-base-300 rounded-lg shadow-sm hover:shadow-md transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 flex-shrink-0 flex items-center justify-center">
+                                ${user.rank <= 3 ? getRankIcon(user.rank) : `<span class=\"badge badge-outline\">${user.rank}</span>`}
+                            </div>
+
+                            <div class="avatar flex-shrink-0">
+                                ${avatarHtml}
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-base truncate" title="${username}">${username}</div>
+                                <div class="text-sm text-muted truncate" title="${secondary}">${secondary}</div>
+                            </div>
+                            
+                            <div class="flex-shrink-0 text-right">
+                                <div class="font-bold text-lg whitespace-nowrap">${metric}</div>
+                                <div class="text-xs text-muted whitespace-nowrap">${metricLabel}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                })
+                .join('') + `</div>`;
+        }
+
+        function getRankIcon(rank) {
+            if (rank === 1) return '<div class="text-3xl" title="1st place">👑</div>';
+            if (rank === 2) return '<div class="text-3xl" title="2nd place">🥈</div>';
+            if (rank === 3) return '<div class="text-3xl" title="3rd place">🥉</div>';
+            return `<span class="badge badge-outline">${rank}</span>`;
+        }
+    </script>
+</body>
+</html>

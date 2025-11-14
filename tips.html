@@ -1,0 +1,91 @@
+<div class="p-0">
+		<div class="card bg-base-100 shadow">
+			<div class="card-body p-4">
+				<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+					<h2 class="text-xl font-bold flex items-center gap-2">
+						<i class="fas fa-robot text-primary"></i> CarbonBot
+					</h2>
+					<div class="join">
+						<button id="modeQa" class="btn btn-sm join-item btn-primary">Carbon Emissions Q&A</button>
+						<button id="modeTips" class="btn btn-sm join-item btn-ghost">Personalized Tips</button>
+					</div>
+				</div>
+
+				<div class="text-xs text-muted mt-1">CarbonBot only answers about carbon emissions, CO₂e, and ways to reduce them.</div>
+
+				<div id="chatWindow" class="mt-3 h-80 overflow-auto p-3 bg-base-200 rounded space-y-3 text-sm">
+					<div class="opacity-70">Ask about your carbon footprint or how to reduce it. Example: "How much CO₂e is 10 miles by car?"</div>
+				</div>
+
+				<form id="chatForm" class="mt-3 flex gap-2">
+					<input id="chatInput" class="input input-bordered w-full" placeholder="Type your question..." />
+					<button class="btn btn-primary" type="submit"><i class="fas fa-paper-plane"></i></button>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		(function() {
+			const chatWindow = document.getElementById('chatWindow');
+			const form = document.getElementById('chatForm');
+			const input = document.getElementById('chatInput');
+			const btnQa = document.getElementById('modeQa');
+			const btnTips = document.getElementById('modeTips');
+			let mode = 'qa';
+
+			function setMode(m) {
+				mode = m;
+				btnQa.classList.toggle('btn-primary', m === 'qa');
+				btnQa.classList.toggle('btn-ghost', m !== 'qa');
+				btnTips.classList.toggle('btn-primary', m === 'tips');
+				btnTips.classList.toggle('btn-ghost', m !== 'tips');
+			}
+
+			function addMsg(role, text) {
+				const row = document.createElement('div');
+				row.className = 'flex ' + (role === 'user' ? 'justify-end' : 'justify-start');
+				const bubble = document.createElement('div');
+				bubble.className = 'max-w-[80%] p-2 rounded ' + (role === 'user' ? 'bg-primary text-primary-content' : 'bg-base-100');
+				bubble.textContent = text;
+				row.appendChild(bubble);
+				chatWindow.appendChild(row);
+				chatWindow.scrollTop = chatWindow.scrollHeight;
+			}
+
+			btnQa.addEventListener('click', () => setMode('qa'));
+			btnTips.addEventListener('click', () => setMode('tips'));
+
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const text = input.value.trim();
+				if (!text) return;
+				addMsg('user', text);
+				input.value = '';
+				const token = localStorage.getItem('token');
+				addMsg('bot', 'Thinking…');
+				try {
+					const res = await fetch('http://localhost:3000/api/social/chat', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+						body: JSON.stringify({ message: text, mode })
+					});
+					const data = await res.json();
+					// remove last 'Thinking…' bubble
+					chatWindow.removeChild(chatWindow.lastElementChild);
+					if (!res.ok || data.status !== 'success') {
+						addMsg('bot', 'Sorry, something went wrong. Try again.');
+					} else {
+						addMsg('bot', data.data.reply || '');
+					}
+				} catch (_) {
+					// remove last 'Thinking…' bubble
+					if (chatWindow.lastElementChild) chatWindow.removeChild(chatWindow.lastElementChild);
+					addMsg('bot', 'Network error.');
+				}
+			});
+
+			// expose tiny API for modal host to re-init if needed
+			window.__carbonTipsInit = () => setMode('qa');
+		})();
+		</script>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Analytics Overview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../dist/styles.css" />
+  <style>
+    body { font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; }
+  </style>
+  <script>
+    (function(){
+      const t = localStorage.getItem('theme') || 'carbonplay';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link rel="icon" href="data:," />
+  <meta name="robots" content="noindex" />
+</head>
+<body>
+  <div class="bg-base-200 min-h-screen">
+    <header class="bg-base-100 border-b">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="btn btn-ghost btn-sm" title="Back to Admin"><i class="fa-solid fa-arrow-left"></i></a>
+          <div>
+            <h1 class="text-xl md:text-2xl font-semibold">Analytics Overview</h1>
+            <p class="text-xs md:text-sm text-base-content/60">User, challenges, scenarios, and social insights</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="downloadPdfBtn" class="btn btn-outline btn-sm" title="Download as PDF"><i class="fa-solid fa-file-pdf mr-2"></i>Download PDF</button>
+          <button id="refreshBtn" class="btn btn-ghost" title="Refresh"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <!-- KPI cards -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="text-sm opacity-60">Total Users</div>
+            <div id="kpi-total-users" class="text-3xl font-semibold">--</div>
+            <div class="text-xs opacity-60"><span id="kpi-active-users">--</span> active</div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="text-sm opacity-60">Scenarios</div>
+            <div id="kpi-total-scenarios" class="text-3xl font-semibold">--</div>
+            <div class="text-xs opacity-60"><span id="kpi-active-scenarios">--</span> active</div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="text-sm opacity-60">Challenges</div>
+            <div id="kpi-total-challenges" class="text-3xl font-semibold">--</div>
+            <div class="text-xs opacity-60"><span id="kpi-active-challenges">--</span> active</div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="text-sm opacity-60">Community</div>
+            <div id="kpi-total-xp" class="text-3xl font-semibold">--</div>
+            <div class="text-xs opacity-60">Total XP</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts row 1 -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow lg:col-span-2">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title">Daily Emissions (30 days)</h2>
+            </div>
+            <div id="chart-emissions-trend" class="h-72"></div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title">Emissions by Category</h2>
+              <span class="text-xs opacity-60">Last 30 days</span>
+            </div>
+            <div id="chart-category" class="h-72"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts row 2 -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title">Users by Country</h2>
+            </div>
+            <div id="chart-countries" class="h-72"></div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title">Challenge Enrollments</h2>
+              <span class="text-xs opacity-60">Completed vs Ongoing</span>
+            </div>
+            <div id="chart-challenges" class="h-72"></div>
+          </div>
+        </div>
+        <div class="card bg-base-100 shadow">
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <h2 class="card-title">Profile Overview</h2>
+              <span class="text-xs opacity-60">Avg household / baselines</span>
+            </div>
+            <div class="stats stats-vertical lg:stats-horizontal shadow">
+              <div class="stat">
+                <div class="stat-title">Avg Household</div>
+                <div id="stat-avg-household" class="stat-value text-lg">--</div>
+              </div>
+              <div class="stat">
+                <div class="stat-title">Baselines Calc.</div>
+                <div id="stat-baselines" class="stat-value text-lg">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Top XP users -->
+      <section class="card bg-base-100 shadow">
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <h2 class="card-title">Top Users by XP</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th class="text-right">XP</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-top-xp">
+                <tr><td colspan="2" class="text-center text-base-content/60">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../js/admin-notify.js"></script>
+  <script src="../js/admin-analytics.js"></script>
+</body>
+</html>

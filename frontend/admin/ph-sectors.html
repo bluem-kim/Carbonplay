@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | PH Sector Stats</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../dist/styles.css" />
+  <script>
+    (function(){
+      const t = localStorage.getItem('theme') || 'carbonplay';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+  <div class="bg-base-200 min-h-screen">
+    <header class="bg-base-100 border-b">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+          <a href="index.html" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i></a>
+          <div>
+            <h1 class="text-xl md:text-2xl font-semibold">Philippines Sector Statistics</h1>
+            <p class="text-xs md:text-sm text-base-content/60">Live estimates from Climatiq. Activities without factors are omitted.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="downloadPdfBtn" class="btn btn-outline btn-sm" title="Download as PDF"><i class="fa-solid fa-file-pdf mr-2"></i>Download PDF</button>
+          <button id="btnRefresh" class="btn btn-ghost"><i class="fa-solid fa-rotate"></i></button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="card-title">PH Economic Activity Estimates</h2>
+              <p class="text-sm text-base-content/60">Climatiq estimates (CO₂e) for fixed activity IDs using monetary input</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs">Amount</span>
+              <input id="amountInput" type="number" class="input input-sm input-bordered w-32 bg-base-100" value="500" min="1" placeholder="e.g., 500" aria-describedby="amountHelp" />
+              <select id="unitSelect" class="select select-sm select-bordered bg-base-100">
+                <option value="usd" selected>USD</option>
+                <option value="eur">EUR</option>
+                <option value="php">PHP</option>
+              </select>
+              <button id="btnRefresh" class="btn btn-ghost btn-sm"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+          </div>
+
+          <p id="amountHelp" class="text-xs text-base-content/60 mt-2">
+            Enter the money spent or budgeted for general purchases/services, then choose the currency. We estimate kg CO₂e by sector using Climatiq’s
+            monetary-intensity factors for Philippine economic activities. Example: 500 USD.
+          </p>
+
+          <div id="missingAlert" class="alert alert-warning text-xs mt-3 hidden">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span id="missingText">Some activities have no data from Climatiq.</span>
+          </div>
+
+          <div id="chartWrap" class="mt-4">
+            <div id="sectorChart" class="h-96 relative overflow-hidden"></div>
+          </div>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Activity</th>
+                  <th>CO₂e</th>
+                  <th>Unit</th>
+                </tr>
+              </thead>
+              <tbody id="sectorTableBody">
+                <tr><td colspan="4" class="text-center text-base-content/60">No data</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info text-xs mt-6">
+        <i class="fa-solid fa-circle-info"></i>
+        <span>These are Climatiq estimates based on monetary input (amount × currency). Activities without available factors are excluded from the chart and table.</span>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/admin-notify.js"></script>
+  <script src="../js/admin-ph-sectors.js"></script>
+</body>
+</html>

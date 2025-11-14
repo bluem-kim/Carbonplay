@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>My Badges | CarbonPlay-API</title>
+		<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+		<link rel="stylesheet" href="frontend/dist/styles.css">
+</head>
+<body data-theme="forest">
+	<div id="navbar-placeholder"></div>
+
+	<div class="bg-base-200 min-h-screen py-8">
+		<div class="max-w-6xl mx-auto px-4">
+			<div class="card bg-base-100 shadow p-6">
+				<div class="flex items-center justify-between mb-4">
+					<div>
+						<h1 class="text-2xl font-bold">My Badges</h1>
+						<p class="text-sm text-muted">Earn badges as you level up. Example: reach level 5 to get the Green Rookie badge.</p>
+					</div>
+					<div id="userLevelBadge" class="badge badge-primary">Level --</div>
+				</div>
+
+				<div id="badgesGrid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+					<!-- Badges will render here -->
+				</div>
+
+				<div id="badgesEmpty" class="text-sm text-muted hidden mt-4">
+					No badges yet. Keep going!
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="frontend/js/navbar.js"></script>
+	<script>loadNavbar('my_badges');</script>
+	<script src="frontend/js/my_badges.js"></script>
+</body>
+</html>

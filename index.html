@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarbonPlay-API | Simulate Your Environmental Impact</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+        <!-- Hero Section -->
+        <section class="relative overflow-hidden">
+            <dotlottie-player src="frontend/public/forest-morning.lottie" autoplay loop background="transparent" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.5"></dotlottie-player>
+            <div class="max-w-6xl mx-auto px-4 py-32 text-center relative z-10" role="region" aria-labelledby="hero-heading">
+                    <h1 id="hero-heading" class="text-4xl md:text-5xl font-extrabold text-white">Simulate the <span class="text-primary">Environmental Impact</span><br/>of Your Lifestyle Choices</h1>
+                <p class="mt-4 text-lg text-white">CarbonPlay-API is an interactive platform that helps you understand and reduce your carbon footprint through dynamic scenario testing and real-time feedback.</p>
+                <div class="mt-6">
+                        <a href="login.html" class="btn btn-primary" aria-label="Try CarbonPlay now">Try It Now</a>
+                    <p class="mt-4 text-sm text-white">New user? <a href="register.html" class="font-semibold text-primary">Create an account</a></p>
+                </div>
+            </div>
+        </section>
+
+    <!-- Features Section -->
+    <section id="features" role="region" aria-labelledby="features-heading">
+        <div class="max-w-6xl mx-auto px-4 py-12">
+            <div class="text-center mb-8">
+                <h2 id="features-heading" class="text-2xl font-bold">Key Features</h2>
+                <p class="text-sm text-muted">Discover how CarbonPlay-API transforms abstract environmental data into actionable insights</p>
+            </div>
+            <div class="grid gap-8 grid-cols-1 md:grid-cols-3">
+                <div class="card p-6 bg-base-100 shadow" role="article" aria-labelledby="feat-1">
+                    <div class="text-3xl text-primary mb-4" aria-hidden="true"><i class="fas fa-chart-line"></i></div>
+                    <h3 id="feat-1" class="font-semibold mb-2">Real-Time CO₂e Calculations</h3>
+                    <p class="text-sm text-muted">Get instant feedback on how your transport, diet, and energy choices affect your carbon footprint.</p>
+                </div>
+                <div class="card p-6 bg-base-100 shadow">
+                    <div class="text-3xl text-primary mb-4" aria-hidden="true"><i class="fas fa-sync-alt"></i></div>
+                    <h3 class="font-semibold mb-2">Dynamic "What-If" Scenarios</h3>
+                    <p class="text-sm text-muted">Test alternative lifestyle choices and see how they impact your emissions in real time.</p>
+                </div>
+                <div class="card p-6 bg-base-100 shadow">
+                    <div class="text-3xl text-primary mb-4" aria-hidden="true"><i class="fas fa-trophy"></i></div>
+                    <h3 class="font-semibold mb-2">Gamified Challenges</h3>
+                    <p class="text-sm text-muted">Complete carbon-reduction challenges and benchmark your progress against community averages.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" role="region" aria-labelledby="how-heading">
+        <div class="max-w-6xl mx-auto px-4 py-12">
+            <div class="text-center mb-6">
+                <h2 id="how-heading" class="text-2xl font-bold">How It Works</h2>
+                <p class="text-sm text-muted">Start making more environmentally conscious decisions in just a few simple steps</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <div class="card p-4 bg-base-100 shadow">
+                    <h3 class="font-semibold">Input Your Lifestyle Data</h3>
+                    <p class="text-sm text-muted">Share details about your current transportation methods, dietary habits, and energy usage.</p>
+                </div>
+                <div class="card p-4 bg-base-100 shadow">
+                    <h3 class="font-semibold">Explore Alternative Scenarios</h3>
+                    <p class="text-sm text-muted">Test what happens if you bike instead of drive, reduce meat consumption, or cut energy usage.</p>
+                </div>
+                <div class="card p-4 bg-base-100 shadow">
+                    <h3 class="font-semibold">Visualize Your Impact</h3>
+                    <p class="text-sm text-muted">See graphical representations of how your choices affect your carbon footprint over time.</p>
+                </div>
+                <div class="card p-4 bg-base-100 shadow">
+                    <h3 class="font-semibold">Implement Changes & Track Progress</h3>
+                    <p class="text-sm text-muted">Adopt new habits and watch as your carbon footprint decreases with each positive change.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- APIs Section -->
+    <section id="apis" role="region" aria-labelledby="apis-heading">
+        <div class="max-w-6xl mx-auto px-4 py-12">
+            <div class="text-center mb-6">
+                <h2 id="apis-heading" class="text-2xl font-bold">Powered By Leading APIs</h2>
+                <p class="text-sm text-muted">We integrate with the best environmental data sources to provide accurate simulations</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-3">
+                <div class="card p-4 bg-base-100 shadow" role="article" aria-labelledby="api-1">
+                    <h3 id="api-1"><i class="fas fa-calculator" aria-hidden="true"></i> Climatiq API</h3>
+                    <p class="text-sm text-muted">Powers our emission factor calculations with up-to-date, scientifically validated data for precise CO₂e output tracking.</p>
+                </div>
+                <div class="card p-4 bg-base-100 shadow" role="article" aria-labelledby="api-2">
+                    <h3 id="api-2"><i class="fas fa-globe" aria-hidden="true"></i> CoolClimate API</h3>
+                    <p class="text-sm text-muted">Enables detailed lifestyle impact modeling to simulate how specific behavioral changes affect your carbon footprint.</p>
+                </div>
+                <div class="card p-4 bg-base-100 shadow" role="article" aria-labelledby="api-3">
+                    <h3 id="api-3"><i class="fas fa-chart-bar" aria-hidden="true"></i> Chart.js / Recharts</h3>
+                    <p class="text-sm text-muted">Creates interactive visualizations that make it easy to understand and compare different carbon reduction scenarios.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="bg-base-200 py-12" role="region" aria-labelledby="cta-heading">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h2 id="cta-heading" class="text-2xl font-bold">Ready to Reduce Your Carbon Footprint?</h2>
+            <p class="text-sm text-muted mb-4">Join CarbonPlay-API today and discover the environmental impact of your lifestyle choices while learning how to make more sustainable decisions.</p>
+            <a href="login.html" class="btn btn-primary" aria-label="Start your carbon journey">Start Your Carbon Journey</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-base-100 py-8" role="contentinfo">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="grid md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <h3 class="text-lg font-bold"><i class="fas fa-leaf mr-2" aria-hidden="true"></i> CarbonPlay-API</h3>
+                    <p class="text-sm text-muted">Turning abstract environmental data into tangible simulations and actionable insights for a greener planet.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold">Quick Links</h4>
+                    <ul class="text-sm text-muted">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#how-it-works">How It Works</a></li>
+                        <li><a href="#apis">APIs</a></li>
+                        <li><a href="#">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold">Resources</h4>
+                    <ul class="text-sm text-muted">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API References</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="text-center text-sm text-muted">
+                <p>© 2025 CarbonPlay-API. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar();</script>
+</body>
+</html>

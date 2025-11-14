@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>My Data | CarbonPlay-API</title>
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+	<link rel="stylesheet" href="frontend/dist/styles.css">
+</head>
+<body data-theme="forest">
+	<div id="navbar-placeholder"></div>
+
+	<div class="bg-base-200 min-h-screen py-8">
+		<div class="max-w-5xl mx-auto px-4">
+			<div class="card bg-base-100 shadow">
+				<div class="card-body p-6" id="myReport">
+					<div class="flex items-center justify-between mb-3">
+						<div>
+							<h1 class="text-2xl font-bold">My Carbon Data</h1>
+							<p class="text-sm text-muted">Weekly and all-time summary</p>
+						</div>
+						<button id="downloadPdfBtn" class="btn btn-primary" onclick="downloadMyReportPdf()">
+							<i class="fas fa-download mr-2"></i> Download PDF
+						</button>
+					</div>
+
+					<div class="grid gap-3 md:grid-cols-3">
+						<div class="p-4 rounded border border-base-300">
+							<div class="text-xs text-muted">This Week</div>
+							<div id="reportWeekly" class="text-xl font-bold text-primary">0 kg CO₂e</div>
+						</div>
+						<div class="p-4 rounded border border-base-300">
+							<div class="text-xs text-muted">All Time</div>
+							<div id="reportAll" class="text-xl font-bold text-primary">0 kg CO₂e</div>
+						</div>
+						<div class="p-4 rounded border border-base-300">
+							<div class="text-xs text-muted">Scenarios • Activities</div>
+							<div id="reportCounts" class="text-xl font-bold">0 • 0</div>
+						</div>
+					</div>
+
+					<div class="grid gap-4 md:grid-cols-2 mt-4">
+						<div class="card bg-base-100 border border-base-300">
+							<div class="card-body p-4">
+								<h2 class="font-semibold mb-2">Weekly by Category</h2>
+								<div class="overflow-x-auto">
+									<table class="table table-sm">
+										<thead>
+											<tr><th>Category</th><th class="text-right">Total</th></tr>
+										</thead>
+										<tbody id="reportWeekTable"></tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+						<div class="card bg-base-100 border border-base-300">
+							<div class="card-body p-4">
+								<h2 class="font-semibold mb-2">All Time by Category</h2>
+								<div class="overflow-x-auto">
+									<table class="table table-sm">
+										<thead>
+											<tr><th>Category</th><th class="text-right">Total</th></tr>
+										</thead>
+										<tbody id="reportAllTable"></tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="frontend/js/navbar.js"></script>
+	<script>loadNavbar('my_data');</script>
+	<script src="frontend/js/my_data.js"></script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scenarios | CarbonPlay-API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+</head>
+<body data-theme="forest" class="bg-gradient-to-b from-base-200 via-base-200 to-base-100 min-h-screen">
+    <div id="navbar-placeholder"></div>
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Gamified Hero -->
+        <div class="card bg-gradient-to-r from-primary/10 to-success/10 border border-base-300 shadow mb-6">
+            <div class="card-body p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="avatar placeholder">
+                            <div class="bg-primary text-primary-content rounded-full w-14">
+                              <span class="text-xl">🌱</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-extrabold tracking-tight">Carbon Footprint Scenarios</h1>
+                            <p class="text-sm text-muted">Level up your eco-journey — compare lifestyles, track impact, earn badges</p>
+                            <div id="earnedBadgesBarScn" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                <span class="badge badge-ghost"><i class="fas fa-spinner fa-spin mr-1"></i> Loading badges...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-80">
+                        <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="font-semibold">XP Progress</span>
+                                <span class="badge badge-primary badge-outline" title="Your current level">Level <span id="xpLevelScn">1</span></span>
+                            </div>
+                            <span class="text-muted"><span id="xpCurrent">0</span> / <span id="xpMax">500</span></span>
+                        </div>
+                        <progress id="xpProgressBar" class="progress progress-primary w-full" value="0" max="100"></progress>
+                        <div class="mt-2 grid grid-cols-2 gap-2">
+                            <div class="stat bg-base-100 rounded p-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-muted"><i class="fas fa-seedling mr-1"></i>Scenarios</span>
+                                    <span class="font-semibold" id="scenariosCount">0</span>
+                                </div>
+                            </div>
+                            <div class="stat bg-base-100 rounded p-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-muted"><i class="fas fa-shoe-prints mr-1"></i>Activities</span>
+                                    <span class="font-semibold" id="activitiesCountScn">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <button class="btn btn-success" onclick="showCreateScenarioModal()"><i class="fas fa-plus mr-2"></i> Create Scenario</button>
+                    <button class="btn btn-ghost" onclick="openChallengesModal()"><i class="fas fa-trophy mr-2 text-warning"></i> View Challenges</button>
+                    <button class="btn btn-ghost"><i class="fas fa-book-open mr-2 text-info"></i> Tips</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scenarios Grid -->
+        <div id="scenarios-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Scenarios will be loaded here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="text-center text-sm text-muted mt-8 hidden">
+            <div class="mx-auto w-20 h-20 rounded-full bg-success/10 flex items-center justify-center text-success">
+                <i class="fas fa-leaf text-3xl"></i>
+            </div>
+            <h3 class="mt-3 text-base font-semibold">No scenarios yet</h3>
+            <p>Create your first scenario to start tracking your carbon footprint</p>
+            <div class="mt-3">
+                <button class="btn btn-success" onclick="showCreateScenarioModal()"><i class="fas fa-plus mr-2"></i> Create Scenario</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenges Modal (content injected from challenges.html) -->
+    <div id="challengesModal" class="modal hidden pointer-events-none">
+        <div class="modal-box w-11/12 max-w-3xl">
+            <div class="flex justify-end">
+                <button class="btn btn-sm btn-ghost" onclick="closeChallengesModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="challengesModalContent" class="space-y-4"></div>
+        </div>
+    </div>
+    
+    <!-- Create Scenario Modal (DaisyUI) -->
+    <div id="createScenarioModal" class="modal hidden pointer-events-none">
+        <div class="modal-box">
+            <h2 class="font-bold text-lg flex items-center"><i class="fas fa-magic mr-2 text-primary"></i> Create New Scenario</h2>
+            <form id="createScenarioForm" class="mt-4 space-y-3">
+                <div>
+                    <label class="label"><span class="label-text">Scenario Name *</span></label>
+                    <input type="text" id="scenarioName" class="input input-bordered w-full" required>
+                </div>
+                <div>
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea id="scenarioDescription" class="textarea textarea-bordered w-full" rows="3" placeholder="Describe this scenario... e.g., 'Car-free week', 'Vegan month'"></textarea>
+                </div>
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-check mr-2"></i> Create Scenario</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('createScenarioModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Add Activity Modal (DaisyUI) -->
+    <div id="addActivityModal" class="modal hidden pointer-events-none">
+        <div class="modal-box">
+            <h2 class="font-bold text-lg flex items-center"><i class="fas fa-gamepad mr-2 text-success"></i> Add Activity</h2>
+            <form id="addActivityForm" class="mt-4 space-y-3">
+                <div>
+                    <label class="label"><span class="label-text">Category *</span></label>
+                    <div id="categoryButtons" class="join flex flex-wrap gap-0 mb-2"></div>
+                    <select id="activityCategory" class="select select-bordered w-full hidden" required onchange="loadActivityTypes()">
+                        <option value="">Select Category</option>
+                        <option value="transport">Transport</option>
+                        <option value="diet">Diet</option>
+                        <option value="energy">Energy</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label"><span class="label-text">Activity Type *</span></label>
+                    <div id="activityTypeButtons" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2 max-h-56 overflow-auto"></div>
+                    <select id="activityType" class="select select-bordered w-full hidden" required onchange="calculatePreview()">
+                        <option value="">Select Activity</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label"><span class="label-text">Value *</span></label>
+                        <input type="number" id="activityValue" class="input input-bordered w-full" step="0.01" min="0.01" required oninput="calculatePreview()">
+                    </div>
+                    <div>
+                        <label class="label"><span class="label-text">Unit *</span></label>
+                        <div id="unitButtons" class="join flex flex-wrap gap-0 mb-2"></div>
+                        <select id="activityUnit" class="select select-bordered w-full hidden" required onchange="calculatePreview()">
+                            <option value="">Select Unit</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="previewContainer" class="mt-2 p-3 bg-base-200 rounded hidden">
+                    <div class="preview-emissions text-sm"><i class="fas fa-chart-line mr-2 text-info"></i> Estimated CO₂e: <span id="previewEmissions">0</span> kg</div>
+                </div>
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus mr-2"></i> Add Activity</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('addActivityModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+        <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar('scenarios');</script>
+    <script src="frontend/js/admin-notify.js"></script>
+    <script src="frontend/js/scenarios.js"></script>
+        <script>
+            // Lightweight host to show challenges as a modal within scenarios page
+            let challengesContentLoaded = false;
+
+            async function openChallengesModal() {
+                const modal = document.getElementById('challengesModal');
+                const content = document.getElementById('challengesModalContent');
+                if (!modal || !content) return;
+
+                if (!challengesContentLoaded) {
+                    try {
+                        const resp = await fetch('challenges.html', { cache: 'no-store' });
+                        const html = await resp.text();
+                        content.innerHTML = html;
+                        challengesContentLoaded = true;
+                    } catch (e) {
+                        content.innerHTML = '<div class="text-sm text-error">Failed to load challenges UI.</div>';
+                    }
+                }
+
+                modal.classList.remove('hidden');
+                modal.classList.remove('pointer-events-none');
+                modal.classList.add('modal-open');
+
+                // Populate select options and list
+                await populateChallengeScenarios();
+                await loadChallengesList();
+
+                // click-outside to close (bind once)
+                if (!openChallengesModal._bound) {
+                    window.addEventListener('click', function (event) {
+                        const isOpen = !modal.classList.contains('hidden') && !modal.classList.contains('pointer-events-none');
+                        if (isOpen && event.target === modal) {
+                            closeChallengesModal();
+                        }
+                    });
+                    openChallengesModal._bound = true;
+                }
+            }
+
+            function closeChallengesModal() {
+                const modal = document.getElementById('challengesModal');
+                if (!modal) return;
+                modal.classList.remove('modal-open');
+                modal.classList.add('hidden');
+                modal.classList.add('pointer-events-none');
+            }
+
+            async function populateChallengeScenarios() {
+                const select = document.getElementById('challengeScenarioSelect');
+                if (!select) return;
+                select.innerHTML = '<option value="">All my scenarios</option>';
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('http://localhost:3000/api/scenarios?limit=100', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) throw new Error('Failed to load scenarios');
+                    const payload = await res.json();
+                    const scenarios = Array.isArray(payload.data) ? payload.data : [];
+                    scenarios.forEach((s) => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.name || `Scenario #${s.id}`;
+                        select.appendChild(opt);
+                    });
+                } catch (_) { /* keep default only */ }
+            }
+
+            async function loadChallengesList() {
+                const listEl = document.getElementById('challengesList');
+                if (!listEl) return;
+                listEl.innerHTML = '<div class="text-sm text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Loading challenges...</div>';
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('http://localhost:3000/api/challenges', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) throw new Error('Failed to load challenges');
+                    const payload = await res.json();
+                    const items = payload.data || [];
+                    if (!items.length) {
+                        listEl.innerHTML = '<div class="text-sm text-muted">No active challenges right now.</div>';
+                        return;
+                    }
+                    listEl.innerHTML = items.map((c) => {
+                        const joined = !!c.joined;
+                        const typeLabels = {
+                            daily_limit: 'Daily Limit',
+                            total_limit: 'Total Limit',
+                            activity_count: 'Activity Goal',
+                            consecutive_days: 'Consecutive Days'
+                        };
+                        const challengeType = typeLabels[c.challenge_type] || 'Challenge';
+                        const targetVal = Number(c.target_value || 0);
+                        const unit = c.target_unit || 'kg CO₂e';
+                        return `
+                            <div class="card bg-base-100 border border-base-300">
+                                <div class="card-body p-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div class="font-semibold">${c.name}</div>
+                                            <div class="text-sm text-muted">${c.description || ''}</div>
+                                            <div class="text-xs text-muted mt-1">
+                                                <span class="badge badge-sm badge-outline">${challengeType}</span>
+                                                Target: ${targetVal} ${unit} • Duration: ${c.duration_days}d
+                                            </div>
+                                            ${c.badge_name ? `<div class="mt-1 text-xs"><i class="fas fa-medal text-warning mr-1"></i>${c.badge_name}</div>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button class="btn btn-sm ${joined ? 'btn-ghost' : 'btn-primary'}" ${joined ? 'disabled' : ''} data-challenge-id="${c.id}">
+                                                ${joined ? '<i class="fas fa-check mr-2"></i> Joined' : '<i class="fas fa-plus mr-2"></i> Join'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }).join('');
+
+                    // Attach click handlers
+                    listEl.querySelectorAll('button[data-challenge-id]').forEach((btn) => {
+                        btn.addEventListener('click', async () => {
+                            const id = btn.getAttribute('data-challenge-id');
+                            await joinChallenge(id);
+                        });
+                    });
+                } catch (e) {
+                    listEl.innerHTML = '<div class="text-sm text-error">Failed to load challenges.</div>';
+                }
+            }
+
+            async function joinChallenge(challengeId) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const sel = document.getElementById('challengeScenarioSelect');
+                    const scenarioId = sel && sel.value ? parseInt(sel.value, 10) : null;
+                    const catSel = document.getElementById('challengeCategorySelect');
+                    const category = catSel && catSel.value ? catSel.value : null;
+                    const res = await fetch(`http://localhost:3000/api/challenges/${challengeId}/join`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(Object.assign({}, scenarioId ? { scenario_id: scenarioId } : {}, category ? { category } : {})),
+                    });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.message || 'Failed to join');
+                    }
+                    await loadChallengesList();
+                } catch (e) {
+                    if (window.notify?.error) window.notify.error(e.message || 'Failed to join challenge');
+                    else alert(e.message || 'Failed to join challenge');
+                }
+            }
+
+            // Expose open/close for inline handlers
+            window.openChallengesModal = openChallengesModal;
+            window.closeChallengesModal = closeChallengesModal;
+        </script>
+</body>
+</html>

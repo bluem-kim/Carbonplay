@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Feed | CarbonPlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="frontend/dist/styles.css">
+  <script src="frontend/js/admin-notify.js"></script>
+</head>
+<body>
+  <div id="navbar-placeholder"></div>
+  <main class="max-w-6xl mx-auto px-4 mt-8">
+    <div class="flex items-center justify-between mb-6">
+      <a class="link link-hover text-base-content/80" href="index.html"><i class="fas fa-arrow-left mr-2"></i> Back</a>
+      <h2 class="text-2xl font-semibold">Social Feed</h2>
+      <div>
+        <button id="refreshBtn" class="btn btn-sm btn-primary"><i class="fas fa-rotate mr-2"></i> Refresh</button>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="card bg-base-100 shadow mb-6">
+      <div class="card-body">
+        <div class="flex items-start gap-3">
+          <div class="avatar" id="composerAvatar">
+            <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm">U</div>
+          </div>
+          <div class="flex-1">
+            <textarea id="tipInput" class="textarea textarea-bordered w-full" rows="2" placeholder="Share a carbon-reduction tip with the community..."></textarea>
+            <div class="flex justify-between items-center mt-2">
+              <select id="tipType" class="select select-bordered select-sm">
+                <option value="general">General</option>
+                <option value="transport">Transport</option>
+                <option value="diet">Diet</option>
+                <option value="energy">Energy</option>
+                <option value="waste">Waste</option>
+              </select>
+              <button id="postTipBtn" class="btn btn-primary btn-sm">Post Tip</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Combined Navigation Tabs -->
+    <div class="tabs tabs-boxed w-full mb-4 overflow-x-auto">
+      <button class="tab tab-active" data-view="milestones" data-filter="all"><i class="fas fa-stream mr-2"></i>All</button>
+      <button class="tab" data-view="milestones" data-filter="milestones"><i class="fas fa-award mr-2"></i>With Milestones</button>
+      <button class="tab" data-view="milestones" data-filter="low"><i class="fas fa-leaf mr-2"></i>Low CO₂e</button>
+      <button class="tab" data-view="milestones" data-filter="active"><i class="fas fa-bolt mr-2"></i>Active Users</button>
+      <button class="tab" data-view="tips"><i class="fas fa-lightbulb mr-2"></i>Tips</button>
+    </div>
+
+    <!-- Milestones Feed -->
+    <div id="milestonesView">
+      <div id="feed" class="grid gap-4" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- Tips Feed -->
+    <div id="tipsView" class="hidden">
+      <div id="tipsFeed" class="grid gap-4" role="status" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <script src="frontend/js/navbar.js"></script>
+  <script>
+  // Simple auth guard: redirect to login if no token
+  function redirectToLogin() {
+    const next = encodeURIComponent(location.pathname.split('/').pop() || 'social_feed.html');
+    window.location.href = `login.html?next=${next}`;
+  }
+
+  const TOKEN = localStorage.getItem('token');
+  if (!TOKEN) {
+    redirectToLogin();
+  }
+
+  loadNavbar('social_feed');
+  const API_BASE = 'http://localhost:3000/api';
+  let FEED_CACHE = [];
+  let TIPS_CACHE = [];
+  let CURRENT_VIEW = 'milestones';
+  let CURRENT_FILTER = 'all';
+
+  // Initialize current view/filter from the active tab in the DOM
+  (function initCurrentTabState(){
+    const active = document.querySelector('.tabs [data-view].tab-active') || document.querySelector('[data-view][data-filter="all"]');
+    if (active) {
+      CURRENT_VIEW = active.getAttribute('data-view') || 'milestones';
+      CURRENT_FILTER = active.getAttribute('data-filter') || 'all';
+    }
+  })();
+  let AUTO_REFRESH_INTERVAL = null;
+
+    function formatTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }
+
+    function createMilestoneCard(item) {
+      const { user, stats, milestones, last_update, like_count, liked } = item;
+      const el = document.createElement('div');
+      el.className = 'card card-compact bg-base-100 shadow-md';
+      
+      const avatarHtml = user.profile_picture 
+        ? `<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"><img src="http://localhost:3000/backend${user.profile_picture}" alt="${user.username}" class="w-full h-full object-cover"></div>`
+        : `<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-sm">${(user.username||'U').charAt(0).toUpperCase()}</div>`;
+
+      // Hide milestones/badges row in Low CO₂e and Active filter views
+      const milestoneSection = (CURRENT_FILTER === 'low' || CURRENT_FILTER === 'active')
+        ? ''
+        : `<div class="flex flex-wrap gap-2">
+            ${milestones.length ? milestones.map(m => `<span class="badge badge-outline">${m.label}</span>`).join('') : '<span class="text-sm text-muted">No milestones yet</span>'}
+          </div>`;
+
+      const descText = (CURRENT_FILTER === 'active')
+        ? `Recent scenarios (30d): ${Number(stats.recent_scenarios || 0)}${stats.last_scenario_name ? ` • Last: ${stats.last_scenario_name} (${formatTime(stats.last_scenario_created_at)})` : ''}`
+        : (CURRENT_FILTER === 'low')
+          ? `7d CO₂e: ${Number(stats.recent_total_7d || 0).toFixed(1)} kg${typeof stats.last_activity_co2e === 'number' ? ` • Last activity: ${Number(stats.last_activity_co2e).toFixed(2)} kg (${formatTime(stats.last_activity_time)})` : ''}`
+          : (stats.scenarios > 0 ? 'Exploring scenarios to reduce footprint.' : 'Just getting started—cheer them on!');
+      
+      el.innerHTML = `
+        <div class="card-body">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="avatar flex-shrink-0">
+                ${avatarHtml}
+              </div>
+              <div>
+                <h3 class="card-title">${user.username}</h3>
+                <p class="text-sm text-muted">Last update: ${formatTime(last_update)}</p>
+              </div>
+            </div>
+            <div class="text-right hidden sm:block">
+              <p class="text-sm">${stats.scenarios} scenarios</p>
+              <p class="text-sm">${stats.activities} activities</p>
+              <p class="text-xs opacity-70">Avg: ${Number(stats.avg_emissions||0).toFixed(1)} CO₂e</p>
+            </div>
+          </div>
+          <div class="divider my-2"></div>
+          ${milestoneSection}
+          <div class="mt-3 text-sm text-base-content/80">${descText}</div>
+
+          <div class="mt-3 flex items-center justify-between">
+            <div class="join">
+              <button class="btn ${liked ? 'btn-success' : 'btn-ghost'} btn-sm join-item" data-milestone-like data-user-id="${user.id}" aria-pressed="${liked}" aria-label="Like">
+                <i class="fas fa-leaf ${liked ? 'text-white' : ''}"></i>
+                <span class="ml-1 text-xs">${like_count || 0}</span>
+              </button>
+              <button class="btn btn-ghost btn-sm join-item" title="Comment (UI only)"><i class="fas fa-comment"></i></button>
+              <button class="btn btn-ghost btn-sm join-item" title="Share (UI only)"><i class="fas fa-share"></i></button>
+            </div>
+            <div class="text-xs opacity-60">${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(last_update))}</div>
+          </div>
+        </div>
+      `;
+      return el;
+    }
+
+    function createTipCard(tip) {
+      const el = document.createElement('div');
+      el.className = 'card card-compact bg-base-100 shadow-md';
+      
+      const avatarHtml = tip.profile_picture 
+        ? `<div class="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"><img src="http://localhost:3000/backend${tip.profile_picture}" alt="${tip.username}" class="w-full h-full object-cover"></div>`
+        : `<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-sm">${(tip.username||'U').charAt(0).toUpperCase()}</div>`;
+      
+      const typeColors = {
+        general: 'badge-ghost',
+        transport: 'badge-info',
+        diet: 'badge-success',
+        energy: 'badge-warning',
+        waste: 'badge-error'
+      };
+      
+      el.innerHTML = `
+        <div class="card-body">
+          <div class="flex items-start gap-3">
+            <div class="avatar flex-shrink-0">
+              ${avatarHtml}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold">${tip.username}</h3>
+                <span class="badge badge-sm ${typeColors[tip.tip_type] || 'badge-ghost'}">${tip.tip_type}</span>
+              </div>
+              <p class="text-sm text-base-content/80 mb-3">${tip.content}</p>
+              <div class="flex items-center justify-between">
+                <button class="btn ${tip.liked ? 'btn-success' : 'btn-ghost'} btn-sm" data-tip-like data-tip-id="${tip.id}" aria-pressed="${tip.liked}">
+                  <i class="fas fa-heart ${tip.liked ? 'text-white' : ''}"></i>
+                  <span class="ml-1 text-xs">${tip.likes_count || 0}</span>
+                </button>
+                <div class="text-xs opacity-60">${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(tip.created_at))}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      return el;
+    }
+
+    function showSkeleton(count = 3) {
+      const container = CURRENT_VIEW === 'milestones' ? document.getElementById('feed') : document.getElementById('tipsFeed');
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'card bg-base-100 shadow-md';
+        card.innerHTML = `
+          <div class="card-body">
+            <div class="flex items-center gap-3">
+              <div class="skeleton w-10 h-10 rounded-full"></div>
+              <div class="flex-1">
+                <div class="skeleton h-4 w-40 mb-2"></div>
+                <div class="skeleton h-3 w-24"></div>
+              </div>
+            </div>
+            <div class="skeleton h-4 w-full mt-4"></div>
+            <div class="skeleton h-4 w-3/4 mt-2"></div>
+          </div>`;
+        container.appendChild(card);
+      }
+    }
+
+    function renderMilestones(list) {
+      const container = document.getElementById('feed');
+      container.innerHTML = '';
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div class="card p-4 bg-base-100">No activity yet.</div>';
+        return;
+      }
+      list.forEach(item => container.appendChild(createMilestoneCard(item)));
+    }
+
+    function renderTips(list) {
+      const container = document.getElementById('tipsFeed');
+      container.innerHTML = '';
+      if (!list || list.length === 0) {
+        container.innerHTML = '<div class="card p-4 bg-base-100">No tips yet. Be the first to share!</div>';
+        return;
+      }
+      list.forEach(tip => container.appendChild(createTipCard(tip)));
+    }
+
+    async function loadMilestones() {
+      const refreshEl = document.getElementById('refreshBtn');
+      if (refreshEl) refreshEl.setAttribute('disabled', '');
+      showSkeleton(3);
+      
+      console.log(`[Frontend] loadMilestones called with CURRENT_FILTER="${CURRENT_FILTER}"`);
+      
+      return new Promise((resolve, reject) => {
+        const token = localStorage.getItem('token');
+        const xhr = new XMLHttpRequest();
+        
+  const q = new URLSearchParams({ limit: '50', filter: String(CURRENT_FILTER || 'all'), ts: String(Date.now()) });
+  const url = `${API_BASE}/social/milestones?${q.toString()}`;
+  console.log(`[Frontend] Fetching: ${url}`);
+  xhr.open('GET', url, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+  xhr.setRequestHeader('Cache-Control', 'no-cache');
+        
+        xhr.onload = function() {
+          if (refreshEl) refreshEl.removeAttribute('disabled');
+          
+          if (xhr.status === 401 || xhr.status === 403) {
+            redirectToLogin();
+            reject(new Error('Unauthorized'));
+            return;
+          }
+
+          if (xhr.status === 200) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (data.status === 'success') {
+                FEED_CACHE = data.data.feed || [];
+                console.log(`[Frontend] Received ${FEED_CACHE.length} users for filter="${CURRENT_FILTER}"`);
+                // Server returns already-filtered feed; render directly
+                renderMilestones(FEED_CACHE);
+                resolve();
+              } else {
+                document.getElementById('feed').innerHTML = `<div class="card p-4 bg-base-100">Error: ${data.message}</div>`;
+                reject(new Error(data.message));
+              }
+            } catch (e) {
+              document.getElementById('feed').innerHTML = `<div class="card p-4 bg-base-100">Error parsing data</div>`;
+              reject(e);
+            }
+          } else {
+            document.getElementById('feed').innerHTML = `<div class="card p-4 bg-base-100">Error loading feed</div>`;
+            reject(new Error('Failed to load'));
+          }
+        };
+        
+        xhr.onerror = function() {
+          if (refreshEl) refreshEl.removeAttribute('disabled');
+          document.getElementById('feed').innerHTML = `<div class="card p-4 bg-base-100">Network error</div>`;
+          reject(new Error('Network error'));
+        };
+        
+        xhr.send();
+      });
+    }
+
+    async function loadTips() {
+      showSkeleton(3);
+      
+      return new Promise((resolve, reject) => {
+        const token = localStorage.getItem('token');
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open('GET', `${API_BASE}/social/tips?limit=50`, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        
+        xhr.onload = function() {
+          if (xhr.status === 401 || xhr.status === 403) {
+            redirectToLogin();
+            reject(new Error('Unauthorized'));
+            return;
+          }
+          if (xhr.status === 200) {
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (data.status === 'success') {
+                TIPS_CACHE = data.data.tips || [];
+                renderTips(TIPS_CACHE);
+                resolve();
+              } else {
+                document.getElementById('tipsFeed').innerHTML = `<div class="card p-4 bg-base-100">Error: ${data.message}</div>`;
+                reject(new Error(data.message));
+              }
+            } catch (e) {
+              document.getElementById('tipsFeed').innerHTML = `<div class="card p-4 bg-base-100">Error parsing data</div>`;
+              reject(e);
+            }
+          } else {
+            document.getElementById('tipsFeed').innerHTML = `<div class="card p-4 bg-base-100">Error loading tips</div>`;
+            reject(new Error('Failed to load'));
+          }
+        };
+        
+        xhr.onerror = function() {
+          document.getElementById('tipsFeed').innerHTML = `<div class="card p-4 bg-base-100">Network error</div>`;
+          reject(new Error('Network error'));
+        };
+        
+        xhr.send();
+      });
+    }
+
+    function startAutoRefresh() {
+      // Clear existing interval
+      if (AUTO_REFRESH_INTERVAL) {
+        clearInterval(AUTO_REFRESH_INTERVAL);
+      }
+      
+      // Refresh every 30 seconds
+      AUTO_REFRESH_INTERVAL = setInterval(() => {
+        if (CURRENT_VIEW === 'milestones') {
+          loadMilestones();
+        } else {
+          loadTips();
+        }
+      }, 30000);
+    }
+
+    async function loadUserProfile() {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401 || res.status === 403) {
+          redirectToLogin();
+          return;
+        }
+        const data = await res.json();
+        if (data.status === 'success') {
+          const user = data.data;
+          const avatar = document.getElementById('composerAvatar');
+          if (avatar && user.profile && user.profile.profile_picture) {
+            avatar.innerHTML = `<div class="w-10 h-10 rounded-full overflow-hidden"><img src="http://localhost:3000/backend${user.profile.profile_picture}" alt="Profile" class="w-full h-full object-cover"></div>`;
+          } else if (avatar) {
+            avatar.innerHTML = `<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm">${(user.username||'U').charAt(0).toUpperCase()}</div>`;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load user profile', e);
+      }
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      if (CURRENT_VIEW === 'milestones') loadMilestones();
+      else loadTips();
+    });
+
+    // Post tip
+    document.getElementById('postTipBtn').addEventListener('click', async () => {
+      const content = document.getElementById('tipInput').value.trim();
+      const tip_type = document.getElementById('tipType').value;
+      
+      if (!content) {
+        if (window.notify?.warning) window.notify.warning('Please enter a tip');
+        else alert('Please enter a tip');
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/social/tips`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ content, tip_type })
+        });
+
+        const data = await res.json();
+        if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Failed to post');
+
+        document.getElementById('tipInput').value = '';
+        document.getElementById('tipType').value = 'general';
+        await loadTips();
+      } catch (e) {
+        if (window.notify?.error) window.notify.error('Error posting tip: ' + e.message);
+        else alert('Error posting tip: ' + e.message);
+      }
+    });
+
+    // View and filter switcher combined
+    document.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-view]');
+      if (!tab) return;
+
+      const view = tab.getAttribute('data-view');
+      const filter = tab.getAttribute('data-filter');
+      
+      console.log(`[Frontend] Tab clicked: view="${view}", filter="${filter}"`);
+
+      // Remove active from all tabs
+      document.querySelectorAll('[data-view]').forEach(t => t.classList.remove('tab-active'));
+      tab.classList.add('tab-active');
+
+      if (view === 'tips') {
+        // Switch to tips view
+        CURRENT_VIEW = 'tips';
+        console.log(`[Frontend] Switching to tips view`);
+        document.getElementById('milestonesView').classList.add('hidden');
+        document.getElementById('tipsView').classList.remove('hidden');
+        if (TIPS_CACHE.length === 0) loadTips();
+      } else {
+        // Switch to milestones view and apply filter
+        CURRENT_VIEW = 'milestones';
+        CURRENT_FILTER = filter || 'all';
+        console.log(`[Frontend] Switching to milestones view with filter="${CURRENT_FILTER}"`);
+        document.getElementById('milestonesView').classList.remove('hidden');
+        document.getElementById('tipsView').classList.add('hidden');
+        
+        // Always ask server for the selected filter to ensure alignment
+        loadMilestones();
+      }
+    });
+
+    // Milestone like toggle
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-milestone-like]');
+      if (!btn) return;
+
+      const userId = parseInt(btn.getAttribute('data-user-id'));
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/social/likes/milestone`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ milestone_user_id: userId })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          redirectToLogin();
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Failed');
+
+        // Update UI
+        const { liked, count } = data.data;
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('span');
+
+        if (liked) {
+          btn.classList.remove('btn-ghost');
+          btn.classList.add('btn-success');
+          if (icon) icon.classList.add('text-white');
+        } else {
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-ghost');
+          if (icon) icon.classList.remove('text-white');
+        }
+        if (countSpan) countSpan.textContent = count;
+        btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      } catch (e) {
+        console.error('Failed to toggle like', e);
+      }
+    });
+
+    // Tip like toggle
+    document.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-tip-like]');
+      if (!btn) return;
+
+      const tipId = parseInt(btn.getAttribute('data-tip-id'));
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_BASE}/social/likes/tip`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ tip_id: tipId })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          redirectToLogin();
+          return;
+        }
+
+        const data = await res.json();
+        if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Failed');
+
+        // Update UI
+        const { liked, count } = data.data;
+        const icon = btn.querySelector('i');
+        const countSpan = btn.querySelector('span');
+
+        if (liked) {
+          btn.classList.remove('btn-ghost');
+          btn.classList.add('btn-success');
+          if (icon) icon.classList.add('text-white');
+        } else {
+          btn.classList.remove('btn-success');
+          btn.classList.add('btn-ghost');
+          if (icon) icon.classList.remove('text-white');
+        }
+        if (countSpan) countSpan.textContent = count;
+        btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+      } catch (e) {
+        console.error('Failed to toggle like', e);
+      }
+    });
+
+    loadUserProfile();
+    if (CURRENT_VIEW === 'milestones') {
+      loadMilestones();
+    } else {
+      loadTips();
+    }
+    startAutoRefresh();
+  </script>
+</body>
+</html>

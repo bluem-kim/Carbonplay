@@ -1,0 +1,43 @@
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-semibold">Join a Challenge</h2>
+      <p class="text-sm text-muted">Pick a challenge to get started. Earn XP by participating and completing.</p>
+    </div>
+  </div>
+
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body p-4">
+      <div class="text-sm font-medium mb-2">Track this challenge against</div>
+      <div class="grid md:grid-cols-2 gap-2">
+        <div>
+          <label class="label"><span class="label-text text-xs">Scenario (optional)</span></label>
+          <select id="challengeScenarioSelect" class="select select-bordered w-full">
+            <option value="">All my scenarios</option>
+          </select>
+        </div>
+        <div>
+          <label class="label"><span class="label-text text-xs">Category (optional)</span></label>
+          <select id="challengeCategorySelect" class="select select-bordered w-full">
+            <option value="">All categories</option>
+            <option value="transport">Transport</option>
+            <option value="diet">Diet</option>
+            <option value="energy">Energy</option>
+            <option value="waste">Waste</option>
+          </select>
+        </div>
+      </div>
+      <div class="text-xs text-muted mt-2">Selecting a scenario will scope progress to only that scenario.</div>
+      <div class="text-xs text-muted">Selecting a category will scope progress to only that category (anti-cheat).</div>
+    </div>
+  </div>
+
+  <div id="challengesList" class="space-y-3">
+    <!-- Active challenges will be injected here -->
+  </div>
+
+  <div class="divider"></div>
+  <div class="text-xs text-muted">
+    Tip: After joining, your baseline is set from your current scenarios. Reduce your CO₂e to hit the target.
+  </div>
+</div>

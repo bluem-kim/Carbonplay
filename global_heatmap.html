@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Heatmap | CarbonPlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="frontend/dist/styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: calc(100vh - 140px); border-radius: 12px; overflow: hidden; }
+    .legend { background: white; padding: 8px 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); font-size: 12px; }
+    .legend .scale { display:flex; align-items:center; gap:4px; }
+    .legend .swatch { width:18px; height: 10px; }
+  </style>
+</head>
+<body data-theme="forest">
+  <div id="navbar-placeholder"></div>
+  <div class="bg-base-200 min-h-screen py-6">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold">Global Heatmap</h1>
+          <p class="text-sm text-muted">Country-level total CO₂ emissions (MtCO₂). Latest year available. Source: World Bank (primary) or OWID (fallback).
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="sourceSelect" class="text-sm text-muted">Source</label>
+          <select id="sourceSelect" class="select select-bordered select-sm">
+            <option value="auto">Auto (WB→OWID)</option>
+            <option value="best">Best (newest & max)</option>
+            <option value="worldbank">World Bank</option>
+            <option value="owid">Our World in Data</option>
+            <option value="local">Local Statistics</option>
+          </select>
+          <button id="btnRefresh" class="btn btn-ghost btn-sm"><i class="fas fa-rotate mr-1"></i> Refresh</button>
+          <button id="btnDebug" class="btn btn-outline btn-sm"><i class="fas fa-bug mr-1"></i> Debug</button>
+        </div>
+      </div>
+      <div id="map" class="bg-base-100 shadow border border-base-300"></div>
+  <div id="note" class="mt-2 text-sm text-muted">Loading...</div>
+      <div id="debugBox" class="mt-3 text-xs bg-base-100 border border-dashed border-base-300 p-3 rounded hidden"></div>
+    </div>
+  </div>
+
+  <script src="frontend/js/navbar.js"></script>
+  <script>loadNavbar('global_heatmap');</script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  // Choropleth for country total CO2 emissions (MtCO2) using OWID dataset via backend.
+    const map = L.map('map', { worldCopyJump: true }).setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const note = document.getElementById('note');
+    const debugBox = document.getElementById('debugBox');
+    let lastResp = null;
+
+    function setDebugVisible(visible){
+      if (!debugBox) return;
+      if (visible) {
+        debugBox.classList.remove('hidden');
+        refreshDebugBox();
+      } else {
+        debugBox.classList.add('hidden');
+      }
+    }
+
+    function refreshDebugBox(){
+      if (!debugBox) return;
+      const d = lastResp;
+      console.log(d);
+      if (!d) {
+        debugBox.innerHTML = '<em>No data loaded yet.</em>';
+        return;
+      }
+      const lines = [];
+      lines.push(`source: ${d.source || 'local'}`);
+      if (d.reason) lines.push(`reason: ${d.reason}`);
+      if (d.summary) {
+        const { count = 0, min = 'n/a', max = 'n/a' } = d.summary || {};
+        lines.push(`summary.count: ${count}`);
+        lines.push(`summary.min: ${min}`);
+        lines.push(`summary.max: ${max}`);
+      }
+      if (d.debug) {
+        const req = Array.isArray(d.debug.requested) ? d.debug.requested : [];
+        const ret = Array.isArray(d.debug.returned) ? d.debug.returned : [];
+        lines.push(`hasApiKey: ${String(d.debug.hasApiKey)}`);
+        lines.push(`requested: ${req.length} -> ${req.slice(0, 12).join(', ')}${req.length > 12 ? '…' : ''}`);
+        lines.push(`returned: ${ret.length} -> ${ret.slice(0, 12).join(', ')}${ret.length > 12 ? '…' : ''}`);
+      }
+      debugBox.innerHTML = `<pre class="whitespace-pre-wrap">${lines.join('\n')}</pre>`;
+    }
+
+    // Fetch live data from backend (World Bank primary, OWID fallback). Falls back to demo if it fails.
+    async function fetchEmissionsFromBackend(source){
+      const params = new URLSearchParams(window.location.search);
+      const year = params.get('year');
+      const parts = [];
+      if (year) parts.push(`year=${encodeURIComponent(year)}`);
+      if (source && source !== 'auto') parts.push(`source=${encodeURIComponent(source)}`);
+      const qs = parts.length ? `?${parts.join('&')}` : '';
+      try {
+        // Add a client-side timeout so the UI doesn't hang indefinitely
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+        const r = await fetch(`/api/country-emissions${qs}`, { headers: { 'Accept': 'application/json' }, signal: controller.signal });
+        clearTimeout(timer);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        if (!j || typeof j !== 'object') throw new Error('invalid json');
+        const data = Array.isArray(j.data) ? j.data : [];
+        const values = data.map(d => Number(d.value || 0)).filter(v => isFinite(v));
+        const count = data.length;
+        const summary = j.summary && typeof j.summary === 'object'
+          ? j.summary
+          : { count, min: values.length ? Math.min(...values) : null, max: values.length ? Math.max(...values) : null };
+        return {
+          source: j.source || 'unknown',
+          unit: j.unit || 'MtCO2',
+          year: j.year || year || null,
+          data,
+          summary,
+          debug: j.debug || {}
+        };
+      } catch (e) {
+        lastResp = { source: 'backend-error', reason: (e && e.name === 'AbortError') ? 'timeout' : (e?.message || 'fetch_failed') };
+        return null;
+      }
+    }
+
+    // Generate deterministic demo data locally (no backend) as a fallback.
+    function generateDemoEmissions(geo){
+      const codeOf = (f) => {
+        const p = (f && f.properties) || {};
+        const try3 = ['iso_a3','ISO_A3','adm0_a3','ADM0_A3','ISO3'];
+        for (const k of try3) { if (p && p[k]) return String(p[k]).toUpperCase(); }
+        if (f && f.id) return String(f.id).toUpperCase(); // common in this GeoJSON
+        return '';
+      };
+      // simple deterministic pseudo-random from string
+      const hashCode = (str) => {
+        let h = 2166136261 >>> 0; // FNV-1a
+        for (let i=0;i<str.length;i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+        return h >>> 0;
+      };
+      const rand01 = (h) => {
+        // xorshift* for a single float in [0,1)
+        let x = (h ^ 0x9e3779b9) >>> 0;
+        x ^= x << 13; x >>>= 0; x ^= x >> 17; x >>>= 0; x ^= x << 5; x >>>= 0;
+        return ((x >>> 0) / 0xFFFFFFFF);
+      };
+      const data = [];
+      const seen = new Set();
+      for (const f of (geo.features || [])){
+        const code = codeOf(f);
+        if (!code || code.length < 3 || seen.has(code)) continue;
+        seen.add(code);
+        const h = hashCode(code);
+        const base = 20 + 50 * (h % 7); // cluster some values
+        const v = base + Math.round(12000 * rand01(h)); // up to ~12k MtCO2
+        data.push({ code, value: v });
+      }
+      const values = data.map(d => d.value);
+      const summary = {
+        count: data.length,
+        min: values.length ? Math.min(...values) : 0,
+        max: values.length ? Math.max(...values) : 0,
+      };
+      return { data, summary, debug: { hasApiKey: false, requested: data.map(d=>d.code), returned: data.map(d=>d.code) }, source: 'demo-local' };
+    }
+
+    function colorScale(v, min, max){
+      if (!isFinite(v)) return '#f0f0f0';
+      const t = Math.max(0, Math.min(1, (v - min) / Math.max(1e-9, (max - min))));
+      // blue (low) -> red (high)
+      const r = Math.round(255 * t);
+      const g = Math.round(100 * (1 - t));
+      const b = Math.round(255 * (1 - t));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    let layer = null;
+
+    async function render(){
+      note.textContent = 'Loading factors and map...';
+
+      // 1) Load a simple world GeoJSON (CDN). Keep it tiny for demo.
+      const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+        .then(r => r.json())
+        .catch(() => null);
+      if (!world) { note.textContent = 'Failed to load world geometry.'; return; }
+
+      // (TopoJSON converter omitted; we rely on ready GeoJSON for simplicity.)
+
+      // Prefer a ready GeoJSON to avoid bundling topo logic here
+      const geo = await fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+        .then(r => r.json())
+        .catch(() => null);
+      if (!geo) { note.textContent = 'Failed to load GeoJSON.'; return; }
+
+  // 2) Try backend live data using selected source; fallback to local demo if requested or unavailable
+  const sourceSelect = document.getElementById('sourceSelect');
+  const chosen = (sourceSelect?.value || 'auto');
+  let resp = null;
+  if (chosen === 'local') {
+    resp = generateDemoEmissions(geo);
+  } else {
+    resp = await fetchEmissionsFromBackend(chosen);
+    if (!resp || !resp.summary || !resp.summary.count) {
+      resp = generateDemoEmissions(geo);
+    }
+  }
+  lastResp = resp;
+  if (debugBox && !debugBox.classList.contains('hidden')) refreshDebugBox();
+  const byCountry = new Map((resp.data || []).map(d => [String(d.code||'').toUpperCase(), Number(d.value||0)]));
+
+  // Find min/max for scale
+  const values = Array.from(byCountry.values());
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
+
+      // 3) Draw choropleth
+      if (layer) { try { layer.remove(); } catch(_){} layer = null; }
+      // OWID returns ISO3 codes; use ISO3 from GeoJSON when possible
+      const codeOf = (f) => {
+        const p = (f && f.properties) || {};
+        const try3 = ['iso_a3','ISO_A3','adm0_a3','ADM0_A3','ISO3'];
+        for (const k of try3) { if (p && p[k]) return String(p[k]).toUpperCase(); }
+        if (f && f.id) return String(f.id).toUpperCase();
+        return '';
+      };
+
+      layer = L.geoJSON(geo, {
+        style: f => {
+          const code = codeOf(f);
+          const emissions = byCountry.get(code);
+          return { color: '#111827', weight: 0.5, fillOpacity: 0.75, fillColor: colorScale(Number(emissions), min, max) };
+        },
+        onEachFeature: (f, l) => {
+          const name = f.properties && (f.properties.name || f.properties.ADMIN || 'Country');
+          const code = codeOf(f);
+          const val = byCountry.get(code) || 'N/A';
+          l.bindTooltip(`${name}<br/>Emissions: ${isFinite(val) ? Number(val).toFixed(1) + ' MtCO₂' : 'N/A'}`);
+        }
+      }).addTo(map);
+
+      // 4) Legend
+      const legend = L.control({ position: 'bottomright' });
+      legend.onAdd = function(){
+        const el = L.DomUtil.create('div', 'legend');
+        el.innerHTML = `<div class="font-semibold mb-1">MtCO₂ (total)</div>
+          <div class="scale">
+            <span class="swatch" style="background:${colorScale(min,min,max)}"></span>
+            <span class="swatch" style="background:${colorScale((min+max)/2,min,max)}"></span>
+            <span class="swatch" style="background:${colorScale(max,min,max)}"></span>
+          </div>
+          <div class="flex justify-between text-[11px] mt-1"><span>${min.toFixed(2)}</span><span>${max.toFixed(2)}</span></div>`;
+        return el;
+      };
+      legend.addTo(map);
+
+      const src = (resp && resp.source) || 'unknown';
+      const year = resp && resp.year;
+      if (resp.summary && resp.summary.count > 0) {
+        const srcName = src === 'demo-local' ? 'Synthetic demo' : (src === 'worldbank' ? 'World Bank' : (src === 'owid' ? 'Our World in Data' : 'Unknown'));
+        note.textContent = `Data source: ${srcName} — Country total CO₂ (${resp.unit || 'MtCO₂'}), year: ${year || 'latest'}.`;
+      } else {
+        note.textContent = 'No country emissions found; showing empty colors.';
+      }
+    }
+
+    // Persist source selection
+    (function initSourceSelect(){
+      const el = document.getElementById('sourceSelect');
+      if (!el) return;
+      try {
+        const saved = localStorage.getItem('heatmapSource');
+        if (saved) el.value = saved;
+      } catch(_){}
+      el.addEventListener('change', () => {
+        try { localStorage.setItem('heatmapSource', el.value); } catch(_){}
+        render();
+      });
+    })();
+
+    document.getElementById('btnRefresh')?.addEventListener('click', render);
+    document.getElementById('btnDebug')?.addEventListener('click', () => {
+      const visible = debugBox && !debugBox.classList.contains('hidden');
+      setDebugVisible(!visible);
+    });
+    render();
+  </script>
+</body>
+</html>

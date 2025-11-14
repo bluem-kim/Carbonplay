@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Minimal custom CSS: prefer Tailwind utilities and DaisyUI components.
+   Keep a small set of app-level variables and the forest overrides so
+   legacy pages that still rely on --light/--dark get reasonable values. */
+:root {
+  --app-max-width: 1200px;
+}
+
+html, body {
+  height: 100%;
+}
+
+/* Forest theme variable remap for legacy CSS hooks */
+body[data-theme="forest"], :root[data-theme="forest"] {
+  --primary: #166534;   /* darker green */
+  --secondary: #14532d;
+  --accent: #4ade80;
+  --dark: #e6f9ef;      /* light text */
+  --light: #052e16;     /* dark background */
+}
+
+/* Small helpers used by the markup - removed app-container to prefer Tailwind utilities */
+
+/* Utility to visually hide elements but keep them accessible */
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* End of custom CSS - prefer Tailwind/DaisyUI for all component styling */
+

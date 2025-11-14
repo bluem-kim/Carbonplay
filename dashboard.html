@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | CarbonPlay-API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+    <!-- DotLottie Web Component (use this for .lottie files) -->
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body data-theme="forest">
+    <div id="navbar-placeholder"></div>
+
+    <div class="bg-base-200 min-h-screen py-8">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="mb-6">
+                <div class="card bg-gradient-to-r from-primary/10 to-success/10 border border-base-300 shadow">
+                    <div class="card-body p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="avatar placeholder">
+                                    <div id="dashboardAvatar" class="bg-primary text-primary-content rounded-full w-14 h-14 flex items-center justify-center">
+                                        <span class="text-xl">🌿</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h1 class="text-3xl font-extrabold tracking-tight">Dashboard</h1>
+                                    <p class="text-sm text-muted" id="greeting">Welcome back! Here's your carbon footprint overview.</p>
+                                    <div id="earnedBadgesBar" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                        <span class="badge badge-ghost"><i class="fas fa-spinner fa-spin mr-1"></i> Loading badges...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-full md:w-96">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-semibold">XP Progress</span>
+                                    <span class="text-muted"><span id="xpCurrent">0</span> / <span id="xpMax">500</span></span>
+                                </div>
+                                <progress id="xpProgressBar" class="progress progress-primary w-full" value="0" max="100"></progress>
+                                <div class="mt-1 text-xs">
+                                    <span class="badge badge-primary badge-outline">Level <span id="xpLevel">1</span></span>
+                                </div>
+                                <div class="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
+                                    <div class="p-2 bg-base-100 rounded border border-base-300">
+                                        <div id="scenariosCount" class="font-semibold">0</div>
+                                        <div class="text-muted">Scenarios</div>
+                                    </div>
+                                    <div class="p-2 bg-base-100 rounded border border-base-300">
+                                        <div id="activitiesCount" class="font-semibold">0</div>
+                                        <div class="text-muted">Activities</div>
+                                    </div>
+                                    <div class="p-2 bg-base-100 rounded border border-base-300">
+                                        <div id="badgesCount" class="font-semibold">0</div>
+                                        <div class="text-muted">Badges</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <button class="btn btn-success" onclick="openScenariosModal()"><i class="fas fa-plus mr-2"></i> Create Scenario</button>
+                            <a href="leaderboard.html" class="btn btn-ghost"><i class="fas fa-trophy mr-2 text-warning"></i> Leaderboard</a>
+                            <button class="btn btn-ghost" onclick="openTipsModal()"><i class="fas fa-book-open mr-2 text-info"></i> CarbonBot</button>
+                            <button id="btnTheme" type="button" class="btn btn-ghost"><i class="fas fa-sun mr-2"></i><span id="themeText">Light Mode</span></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-6">
+                <div class="card bg-base-100 shadow p-4">
+                        <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-lg font-semibold">Your Carbon Footprint</h2>
+                            <p class="text-sm text-muted">This week (last 7 days)</p>
+                        </div>
+                        <div id="carbonAnnual" class="text-xl font-bold text-primary">0 kg CO₂e</div>
+                    </div>
+                    <div class="h-64">
+                        <div id="carbonChart" class="h-full"></div>
+                    </div>
+                </div>
+
+                <!-- You vs Community (Line) -->
+                <div class="card bg-base-100 shadow p-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-lg font-semibold">You vs Community</h2>
+                            <p class="text-sm text-muted">Last 7 days</p>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <div id="weeklyComparisonChart" class="h-full"></div>
+                    </div>
+                </div>
+
+                <div id="motivationCard" class="card bg-gradient-to-br from-success/10 via-primary/5 to-info/10 border border-success/20 shadow-lg">
+                    <div class="card-body p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-bold text-lg flex items-center gap-2">
+                                <span class="text-2xl">💡</span>
+                                Weekly Motivation
+                            </h3>
+                            <div class="badge badge-success badge-outline">
+                                <i class="fas fa-calendar-week mr-1"></i> This Week
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <dotlottie-player
+                              id="motivationLottie"
+                              src="/frontend/public/loading-logo.lottie"
+                              autoplay
+                              loop
+                              background="transparent"
+                              style="width:64px;height:64px;flex-shrink:0"
+                              width="64"
+                              height="64"
+                            ></dotlottie-player>
+                            <div class="flex-1 min-w-0">
+                                <p id="motivationMsg" class="text-sm leading-relaxed mb-2">Loading personalized tip...</p>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <div class="badge badge-ghost gap-1">
+                                        <i class="fas fa-leaf"></i>
+                                        <span id="userWeekly">0 kg</span>
+                                    </div>
+                                    <div class="badge badge-ghost gap-1">
+                                        <i class="fas fa-users"></i>
+                                        <span id="communityAvg">0 kg avg</span>
+                                    </div>
+                                    <div id="levelBadge" class="badge badge-primary gap-1">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span id="levelText">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-3">
+                    <div class="card bg-base-100 shadow p-4">
+                        <h3 class="font-semibold"><i class="fas fa-flask mr-2"></i> Your Scenarios</h3>
+                        <div id="scenariosContainer" class="mt-4">
+                            <p class="text-sm text-muted">You haven't created any scenarios yet.</p>
+                        </div>
+                        <button class="btn btn-primary w-full mt-4" onclick="openScenariosModal()">
+                            <i class="fas fa-plus mr-2"></i> Create New Scenario
+                        </button>
+                    </div>
+
+                    <div class="card bg-base-100 shadow p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-semibold"><i class="fas fa-trophy mr-2"></i> Leaderboard</h3>
+                            <a href="leaderboard.html" class="btn btn-ghost btn-xs">
+                                View All <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                        <div class="tabs tabs-boxed mt-3">
+                            <button class="tab tab-active tab-btn" data-type="scenarios">Most Active</button>
+                            <button class="tab tab-btn" data-type="reduction">Eco Champions</button>
+                        </div>
+                        <div id="leaderboardContainer" class="mt-4">
+                            <div class="text-sm text-muted"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="card bg-base-100 shadow p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold"><i class="fas fa-medal mr-2"></i> Challenges</h3>
+                            <button class="btn btn-ghost btn-sm" onclick="openChallengesModal()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div id="challengesContainer" class="space-y-4">
+                            <div class="text-sm text-muted">
+                                <i class="fas fa-spinner fa-spin mr-2"></i> Loading challenges...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar('dashboard');</script>
+    <script src="frontend/js/admin-notify.js"></script>
+    
+    <!-- Scenarios Modal (embedded SPA-style) -->
+    <div id="scenariosModal" class="modal hidden pointer-events-none">
+        <div class="modal-box w-11/12 max-w-7xl">
+            <div class="flex justify-end">
+                <button class="btn btn-sm btn-ghost" onclick="closeScenariosModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Gamified Hero (mirrored from scenarios.html) -->
+            <div class="card bg-gradient-to-r from-primary/10 to-success/10 border border-base-300 shadow mb-4">
+                <div class="card-body p-6">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary text-primary-content rounded-full w-12">
+                                  <span class="text-lg">🌱</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-extrabold tracking-tight">Your Scenarios</h2>
+                                <p class="text-sm text-muted">Level up your eco-journey — compare lifestyles, track impact, earn badges</p>
+                                <div id="earnedBadgesBarScn" class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                    <span class="badge badge-ghost"><i class="fas fa-spinner fa-spin mr-1"></i> Loading badges...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-80">
+                            <div class="flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold">XP Progress</span>
+                                    <span class="badge badge-primary badge-outline">Level <span id="xpLevelScn">1</span></span>
+                                </div>
+                                <span class="text-muted"><span id="xpCurrentScn">0</span> / <span id="xpMaxScn">500</span></span>
+                            </div>
+                            <progress id="xpProgressBarScn" class="progress progress-primary w-full" value="0" max="100"></progress>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                <div class="stat bg-base-100 rounded p-2">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-muted"><i class="fas fa-seedling mr-1"></i>Scenarios</span>
+                                        <span class="font-semibold" id="scenariosCountScn">0</span>
+                                    </div>
+                                </div>
+                                <div class="stat bg-base-100 rounded p-2">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-muted"><i class="fas fa-shoe-prints mr-1"></i>Activities</span>
+                                        <span class="font-semibold" id="activitiesCountScn">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button class="btn btn-success" onclick="showCreateScenarioModal()"><i class="fas fa-plus mr-2"></i> Create Scenario</button>
+                        <button class="btn btn-ghost" onclick="openChallengesModal()"><i class="fas fa-trophy mr-2 text-warning"></i> View Challenges</button>
+                        <button class="btn btn-ghost" onclick="openTipsModal()"><i class="fas fa-book-open mr-2 text-info"></i> Tips</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenarios Grid (unchanged IDs) -->
+            <div id="scenarios-container" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+            <div id="empty-state" class="text-center text-sm text-muted mt-8 hidden">
+                <i class="fas fa-leaf text-2xl"></i>
+                <h3 class="mt-2">No scenarios yet</h3>
+                <p>Create your first scenario to start tracking your carbon footprint</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Scenario Modal (DaisyUI) -->
+    <div id="createScenarioModal" class="modal hidden pointer-events-none">
+        <div class="modal-box">
+            <h2 class="font-bold text-lg">Create New Scenario</h2>
+            <form id="createScenarioForm" class="mt-4 space-y-3">
+                <div>
+                    <label class="label"><span class="label-text">Scenario Name *</span></label>
+                    <input type="text" id="scenarioName" class="input input-bordered w-full" required>
+                </div>
+                <div>
+                    <label class="label"><span class="label-text">Description</span></label>
+                    <textarea id="scenarioDescription" class="textarea textarea-bordered w-full" rows="3" placeholder="Describe this scenario..."></textarea>
+                </div>
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary">Create Scenario</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('createScenarioModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal (DaisyUI) -->
+    <div id="addActivityModal" class="modal hidden pointer-events-none">
+        <div class="modal-box">
+            <h2 class="font-bold text-lg">Add Activity</h2>
+            <form id="addActivityForm" class="mt-4 space-y-3">
+                <div>
+                    <label class="label"><span class="label-text">Category *</span></label>
+                    <div id="categoryButtons" class="join flex flex-wrap gap-0 mb-2"></div>
+                    <select id="activityCategory" class="select select-bordered w-full hidden" required onchange="loadActivityTypes()">
+                        <option value="">Select Category</option>
+                        <option value="transport">Transport</option>
+                        <option value="diet">Diet</option>
+                        <option value="energy">Energy</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label"><span class="label-text">Activity Type *</span></label>
+                    <div id="activityTypeButtons" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2 max-h-56 overflow-auto"></div>
+                    <select id="activityType" class="select select-bordered w-full hidden" required onchange="calculatePreview()">
+                        <option value="">Select Activity</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label"><span class="label-text">Value *</span></label>
+                        <input type="number" id="activityValue" class="input input-bordered w-full" step="0.01" min="0.01" required oninput="calculatePreview()">
+                    </div>
+                    <div>
+                        <label class="label"><span class="label-text">Unit *</span></label>
+                        <div id="unitButtons" class="join flex flex-wrap gap-0 mb-2"></div>
+                        <select id="activityUnit" class="select select-bordered w-full hidden" required onchange="calculatePreview()">
+                            <option value="">Select Unit</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="previewContainer" class="mt-2 p-3 bg-base-200 rounded hidden">
+                    <div class="preview-emissions text-sm">Estimated CO₂e: <span id="previewEmissions">0</span> kg</div>
+                </div>
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary">Add Activity</button>
+                    <button type="button" class="btn btn-ghost" onclick="closeModal('addActivityModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Challenges Modal (content injected from challenges.html) -->
+    <div id="challengesModal" class="modal hidden pointer-events-none">
+        <div class="modal-box w-11/12 max-w-3xl">
+            <div class="flex justify-end">
+                <button class="btn btn-sm btn-ghost" onclick="closeChallengesModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="challengesModalContent" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Challenge Tracker Modal -->
+    <div id="challengeTrackerModal" class="modal hidden pointer-events-none">
+        <div class="modal-box w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Daily Challenge Tracker</h3>
+                <button class="btn btn-sm btn-ghost" onclick="closeChallengeTrackerModal()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="challengeTrackerContent"></div>
+        </div>
+    </div>
+
+    <!-- Tips Modal (content injected from tips.html) -->
+    <div id="tipsModal" class="modal hidden pointer-events-none">
+        <div class="modal-box w-11/12 max-w-3xl">
+            <div class="flex justify-end">
+                <button class="btn btn-sm btn-ghost" onclick="closeTipsModal()" aria-label="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="tipsModalContent" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+      function openScenariosModal() {
+        const el = document.getElementById('scenariosModal');
+        el.classList.remove('hidden');
+        el.classList.remove('pointer-events-none');
+        el.classList.add('modal-open');
+        // Ensure data is loaded when opening from dashboard
+        if (typeof loadEmissionFactors === 'function') loadEmissionFactors();
+        if (typeof loadScenarios === 'function') loadScenarios();
+                // Update the modal stats (XP and counts) with live data
+                                if (typeof loadUserStatsForScenariosModal === 'function') loadUserStatsForScenariosModal();
+                                // Load earned badges into the modal header
+                                if (typeof loadUserBadgesForScenarios === 'function') loadUserBadgesForScenarios();
+      }
+      function closeScenariosModal() {
+        const el = document.getElementById('scenariosModal');
+        el.classList.remove('modal-open');
+        el.classList.add('hidden');
+        el.classList.add('pointer-events-none');
+      }
+      // Close modal when clicking outside
+      window.addEventListener('click', function (event) {
+        const modal = document.getElementById('scenariosModal');
+        if (!modal) return;
+        const isOpen = !modal.classList.contains('hidden') && !modal.classList.contains('pointer-events-none');
+        if (isOpen && event.target === modal) {
+          closeScenariosModal();
+        }
+      });
+    </script>
+    
+    <!-- Load scenarios logic for embedded modal -->
+    <script src="frontend/js/scenarios.js"></script>
+        <script>
+            // Load stats into the Scenarios modal header (uses separate IDs to avoid clashes)
+            async function loadUserStatsForScenariosModal() {
+                try {
+                    const token = localStorage.getItem('token');
+                    const res = await fetch('http://localhost:3000/api/stats/summary', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (!res.ok) throw new Error('Failed to load stats');
+                    const data = await res.json();
+                    if (data.status !== 'success') throw new Error(data.message || 'Failed');
+                    const s = data.data || {};
+
+                    const xpCur = document.getElementById('xpCurrentScn');
+                    const xpMax = document.getElementById('xpMaxScn');
+                    const xpBar = document.getElementById('xpProgressBarScn');
+                    const scEl = document.getElementById('scenariosCountScn');
+                    const acEl = document.getElementById('activitiesCountScn');
+                    const lvlEl = document.getElementById('xpLevelScn');
+
+                    const xpTotal = Number(s.xp_total || 0);
+                    const levelSize = Number(s.level_size || 500);
+                    const xpInLevel = Number(s.xp_in_level || (xpTotal % levelSize));
+                    const pct = Number(s.xp_progress_pct || Math.floor((xpInLevel / (levelSize || 1)) * 100));
+                    const level = Number(s.level || Math.floor(xpTotal / (levelSize || 1)) + 1);
+
+                    if (xpCur) xpCur.textContent = xpInLevel;
+                    if (xpMax) xpMax.textContent = levelSize;
+                    if (xpBar) xpBar.value = Math.max(0, Math.min(100, pct));
+                    if (scEl) scEl.textContent = s.scenarios ?? 0;
+                    if (acEl) acEl.textContent = s.activities ?? 0;
+                    if (lvlEl) lvlEl.textContent = String(level);
+                } catch (e) {
+                    // Keep placeholders on error
+                    console.warn('Scenarios modal stats failed:', e.message || e);
+                }
+            }
+        </script>
+        <script>
+            // Intercept nav links to scenarios.html while on dashboard to keep SPA flow
+            document.addEventListener('click', function(e) {
+                const anchor = e.target.closest('a[href$="scenarios.html"]');
+                if (anchor) {
+                    e.preventDefault();
+                    if (typeof openScenariosModal === 'function') {
+                        openScenariosModal();
+                    } else {
+                        // Fallback: no handler found, allow navigation
+                        window.location.href = anchor.getAttribute('href');
+                    }
+                }
+            });
+        </script>
+    <script src="frontend/js/dashboard.js"></script>
+            <script>
+            (function(){
+            const KEY = 'theme';
+            const DARK = 'forest';
+            const LIGHT = 'carbonplay'; // matches daisyui themes in tailwind.config.cjs
+                const btn = document.getElementById('btnTheme');
+                const txt = document.getElementById('themeText');
+                const icon = btn ? btn.querySelector('i') : null;
+
+                function apply(theme){
+                        // DaisyUI reads [data-theme] on <html>; set on both html and body for safety
+                        document.documentElement.setAttribute('data-theme', theme);
+                        document.body.setAttribute('data-theme', theme);
+                    const isLight = theme === LIGHT;
+                    if (txt) txt.textContent = isLight ? 'Dark Mode' : 'Light Mode';
+                    if (icon){
+                        icon.classList.toggle('fa-sun', !isLight);
+                        icon.classList.toggle('fa-moon', isLight);
+                    }
+                }
+
+                    const saved = localStorage.getItem(KEY)
+                        || document.documentElement.getAttribute('data-theme')
+                        || document.body.getAttribute('data-theme')
+                        || DARK;
+                apply(saved);
+                if (btn){
+                    btn.addEventListener('click', () => {
+                        const cur = document.body.getAttribute('data-theme') || DARK;
+                        const next = cur === LIGHT ? DARK : LIGHT;
+                        localStorage.setItem(KEY, next);
+                        apply(next);
+                    });
+                }
+            })();
+        </script>
+        <script>
+            // Open Tips modal as SPA, load tips.html once
+            let tipsContentLoaded = false;
+            async function openTipsModal() {
+                const modal = document.getElementById('tipsModal');
+                const content = document.getElementById('tipsModalContent');
+                if (!modal || !content) return;
+                if (!tipsContentLoaded) {
+                    try {
+                        const resp = await fetch('tips.html', { cache: 'no-store' });
+                                    const html = await resp.text();
+                                    content.innerHTML = html;
+                                    tipsContentLoaded = true;
+                                    // Initialize chat handlers from host script
+                                    if (window.initTipsModalUI) window.initTipsModalUI();
+                    } catch (e) {
+                        content.innerHTML = '<div class="text-sm text-error">Failed to load Tips UI.</div>';
+                    }
+                }
+                modal.classList.remove('hidden');
+                modal.classList.remove('pointer-events-none');
+                modal.classList.add('modal-open');
+
+                // click-outside to close
+                if (!openTipsModal._bound) {
+                    window.addEventListener('click', function (event) {
+                        const isOpen = !modal.classList.contains('hidden') && !modal.classList.contains('pointer-events-none');
+                        if (isOpen && event.target === modal) {
+                            closeTipsModal();
+                        }
+                    });
+                    openTipsModal._bound = true;
+                }
+            }
+            function closeTipsModal() {
+                const modal = document.getElementById('tipsModal');
+                if (!modal) return;
+                modal.classList.remove('modal-open');
+                modal.classList.add('hidden');
+                modal.classList.add('pointer-events-none');
+            }
+            // Intercept nav links to tips.html to keep SPA flow
+            document.addEventListener('click', function(e) {
+                const anchor = e.target.closest('a[href$="tips.html"]');
+                if (anchor) {
+                    e.preventDefault();
+                    openTipsModal();
+                }
+            });
+        </script>
+</body>
+</html>

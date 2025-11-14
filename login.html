@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | CarbonPlay-API</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+    <!-- Styles removed: migrated to Tailwind. Page now uses Tailwind/DaisyUI utility classes -->
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+    <main class="min-h-screen flex items-center justify-center bg-gradient-to-br from-base-200 to-green-50 p-6">
+        <a href="index.html" class="absolute top-5 left-5 text-base-content/80 hover:text-primary flex items-center gap-2"><i class="fas fa-arrow-left"></i>Back</a>
+
+        <div class="w-full max-w-4xl bg-base-100 shadow-xl rounded-lg overflow-hidden flex flex-col md:flex-row">
+            <div class="md:w-2/5 bg-[linear-gradient( rgba(46,204,113,0.7), rgba(52,152,219,0.7) ),url('frontend/images/environment-bg.jpg')] bg-cover bg-center p-10 flex flex-col justify-center items-center text-white">
+                <h2 class="text-2xl font-semibold mb-3">Welcome to CarbonPlay</h2>
+                <p class="mb-6 text-sm">Sign in to access your personalized carbon impact dashboard and continue your environmental journey.</p>
+                <div class="flex items-center gap-2 text-lg font-semibold"><i class="fas fa-leaf"></i> CarbonPlay-API</div>
+            </div>
+
+            <div class="md:w-3/5 p-10">
+                <h3 class="text-xl font-semibold text-base-content mb-6 text-center">Sign In</h3>
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-base-content mb-1">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required class="input input-bordered w-full" />
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-base-content mb-1">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required class="input input-bordered w-full" />
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <label class="flex items-center gap-2"><input type="checkbox" id="remember" name="remember" class="checkbox" /> Remember me</label>
+                        <a href="#" class="link link-primary">Forgot password?</a>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary w-full">Sign In</button>
+                    </div>
+                    <p class="text-center text-sm">Don't have an account? <a href="register.html" class="link link-primary">Register now</a></p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="frontend/js/admin-notify.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password, remember })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store token in localStorage or sessionStorage
+                    localStorage.setItem('token', data.token);
+                    // Redirect to dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    if (window.notify?.error) window.notify.error(data.message || 'Login failed. Please check your credentials.');
+                    else alert(data.message || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                if (window.notify?.error) window.notify.error('An error occurred during login. Please try again.');
+                else alert('An error occurred during login. Please try again.');
+            }
+        });
+    </script>
+    <script>
+        // Show any flash message passed from previous page (e.g., post-registration)
+        (function(){
+            try {
+                const msg = sessionStorage.getItem('flashMessage');
+                if (msg) {
+                    if (window.notify?.success) window.notify.success(msg);
+                    else alert(msg);
+                    sessionStorage.removeItem('flashMessage');
+                }
+            } catch (_) { /* ignore */ }
+        })();
+    </script>
+    <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar();</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | CarbonPlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="frontend/dist/styles.css">
+    <script src="frontend/js/admin-notify.js"></script>
+</head>
+<body data-theme="forest">
+    <div id="navbar-placeholder"></div>
+
+    <div class="bg-base-200 min-h-screen py-8">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Profile Picture Card -->
+                <div class="card bg-base-100 shadow">
+                    <div class="card-body items-center text-center">
+                        <div class="avatar">
+                            <div id="profilePicturePreview" class="w-32 h-32 rounded-full bg-primary text-white relative overflow-hidden">
+                                <svg class="absolute w-16 h-16 md:w-20 md:h-20 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="left:50%; top:50%; transform: translate(-50%, -44%); display:block;">
+                                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3 20.25a8.25 8.25 0 1116.5 0v.75H3v-.75z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h2 id="profileUsername" class="text-xl font-bold mt-4">Loading...</h2>
+                        <p id="profileEmail" class="text-sm text-muted">email@example.com</p>
+                        
+                        <div class="divider"></div>
+                        
+                        <div class="w-full">
+                            <label class="btn btn-primary btn-sm w-full">
+                                <i class="fas fa-camera mr-2"></i> Change Picture
+                                <input type="file" id="profilePictureInput" accept="image/*" class="hidden">
+                            </label>
+                            <div id="uploadProgress" class="hidden mt-2">
+                                <progress class="progress progress-primary w-full"></progress>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Information Card -->
+                <div class="lg:col-span-2 card bg-base-100 shadow">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4">
+                            <i class="fas fa-user-edit mr-2"></i>
+                            Profile Information
+                        </h2>
+                        
+                        <form id="profileForm">
+                            <div class="form-control mb-4">
+                                <label class="label">
+                                    <span class="label-text">Username</span>
+                                </label>
+                                <input type="text" id="usernameInput" placeholder="Enter username" class="input input-bordered" required>
+                            </div>
+
+                            <div class="form-control mb-4">
+                                <label class="label">
+                                    <span class="label-text">Email</span>
+                                </label>
+                                <input type="email" id="emailInput" class="input input-bordered" disabled>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Country</span>
+                                    </label>
+                                    <select id="countryInput" class="select select-bordered">
+                                        <option value="US">United States</option>
+                                        <option value="UK">United Kingdom</option>
+                                        <option value="CA">Canada</option>
+                                        <option value="AU">Australia</option>
+                                        <option value="DE">Germany</option>
+                                        <option value="FR">France</option>
+                                        <option value="JP">Japan</option>
+                                        <option value="CN">China</option>
+                                        <option value="IN">India</option>
+                                        <option value="BR">Brazil</option>
+                                        <option value="PH">Philippines</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Household Size</span>
+                                    </label>
+                                    <input type="number" id="householdInput" min="1" max="20" placeholder="1" class="input input-bordered">
+                                </div>
+                            </div>
+
+                            <div id="alertMessage" class="alert hidden mb-4"></div>
+
+                            <div class="card-actions justify-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i> Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Stats Card -->
+                <div class="lg:col-span-3 card bg-base-100 shadow">
+                    <div class="card-body">
+                        <h2 class="card-title mb-4">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            My Statistics
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="stat bg-base-200 rounded-lg">
+                                <div class="stat-figure text-primary">
+                                    <i class="fas fa-leaf text-3xl"></i>
+                                </div>
+                                <div class="stat-title">Total XP</div>
+                                <div id="totalXP" class="stat-value text-primary">0</div>
+                                <div class="stat-desc">Experience points</div>
+                            </div>
+
+                            <div class="stat bg-base-200 rounded-lg">
+                                <div class="stat-figure text-success">
+                                    <i class="fas fa-map-marked-alt text-3xl"></i>
+                                </div>
+                                <div class="stat-title">Scenarios</div>
+                                <div id="totalScenarios" class="stat-value text-success">0</div>
+                                <div class="stat-desc">Created</div>
+                            </div>
+
+                            <div class="stat bg-base-200 rounded-lg">
+                                <div class="stat-figure text-warning">
+                                    <i class="fas fa-tasks text-3xl"></i>
+                                </div>
+                                <div class="stat-title">Activities</div>
+                                <div id="totalActivities" class="stat-value text-warning">0</div>
+                                <div class="stat-desc">Completed</div>
+                            </div>
+
+                            <div class="stat bg-base-200 rounded-lg">
+                                <div class="stat-figure text-info">
+                                    <i class="fas fa-trophy text-3xl"></i>
+                                </div>
+                                <div class="stat-title">Rank</div>
+                                <div id="userRank" class="stat-value text-info">#--</div>
+                                <div class="stat-desc">Global ranking</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="frontend/js/navbar.js"></script>
+    <script>loadNavbar('user_profile');</script>
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadProfile();
+            loadStats();
+
+            // Profile form submission
+            document.getElementById('profileForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateProfile();
+            });
+
+            // Profile picture upload
+            document.getElementById('profilePictureInput').addEventListener('change', async (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    await uploadProfilePicture(e.target.files[0]);
+                }
+            });
+        });
+
+        async function loadProfile() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load profile');
+
+                const result = await response.json();
+                const user = result.data;
+
+                // Update UI
+                document.getElementById('profileUsername').textContent = user.username;
+                document.getElementById('profileEmail').textContent = user.email;
+                document.getElementById('usernameInput').value = user.username;
+                document.getElementById('emailInput').value = user.email;
+
+                if (user.profile) {
+                    if (user.profile.country) {
+                        document.getElementById('countryInput').value = user.profile.country;
+                    }
+                    if (user.profile.household_size) {
+                        document.getElementById('householdInput').value = user.profile.household_size;
+                    }
+                    if (user.profile.profile_picture) {
+                        // Use backend URL to serve the image
+                        const imgUrl = `http://localhost:3000/backend${user.profile.profile_picture}`;
+                        document.getElementById('profilePicturePreview').innerHTML = 
+                            `<img src="${imgUrl}" alt="Profile" class="w-full h-full object-cover">`;
+                    }
+                }
+            } catch (error) {
+                console.error('Load profile error:', error);
+                showAlert('Failed to load profile', 'error');
+            }
+        }
+
+        async function updateProfile() {
+            try {
+                const token = localStorage.getItem('token');
+                const username = document.getElementById('usernameInput').value;
+                const country = document.getElementById('countryInput').value;
+                const household_size = parseInt(document.getElementById('householdInput').value) || 1;
+
+                const response = await fetch(`${API_BASE}/auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username, country, household_size })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to update profile');
+                }
+
+                const result = await response.json();
+                document.getElementById('profileUsername').textContent = result.data.username;
+                showAlert('Profile updated successfully!', 'success');
+            } catch (error) {
+                console.error('Update profile error:', error);
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function uploadProfilePicture(file) {
+            try {
+                const token = localStorage.getItem('token');
+                const formData = new FormData();
+                formData.append('profilePicture', file);
+
+                document.getElementById('uploadProgress').classList.remove('hidden');
+
+                const response = await fetch(`${API_BASE}/auth/profile/picture`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                document.getElementById('uploadProgress').classList.add('hidden');
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to upload picture');
+                }
+
+                const result = await response.json();
+                const imgUrl = `http://localhost:3000/backend${result.data.profilePicture}`;
+                document.getElementById('profilePicturePreview').innerHTML = 
+                    `<img src="${imgUrl}" alt="Profile" class="w-full h-full object-cover">`;
+                
+                showAlert('Profile picture updated successfully!', 'success');
+            } catch (error) {
+                console.error('Upload picture error:', error);
+                document.getElementById('uploadProgress').classList.add('hidden');
+                showAlert(error.message, 'error');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const token = localStorage.getItem('token');
+                
+                // Load stats summary (XP, scenarios, activities)
+                const statsResponse = await fetch(`${API_BASE}/stats/summary`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    document.getElementById('totalXP').textContent = statsData.data?.xp_total || 0;
+                    document.getElementById('totalScenarios').textContent = statsData.data?.scenarios || 0;
+                    document.getElementById('totalActivities').textContent = statsData.data?.activities || 0;
+                }
+
+                // Load rank from leaderboard
+                const leaderboardResponse = await fetch(`${API_BASE}/leaderboard?type=scenarios&limit=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (leaderboardResponse.ok) {
+                    const leaderboardData = await leaderboardResponse.json();
+                    const currentUser = await (await fetch(`${API_BASE}/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })).json();
+                    
+                    const userIndex = leaderboardData.data?.leaderboard?.findIndex(
+                        u => u.username === currentUser.data.username
+                    );
+                    if (userIndex !== -1) {
+                        document.getElementById('userRank').textContent = `#${userIndex + 1}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Load stats error:', error);
+            }
+        }
+
+        function showAlert(message, type) {
+            // Prefer global toast notifier when available
+            if (window.notify) {
+                const fn = type === 'success' ? window.notify.success : type === 'warning' ? window.notify.warning : window.notify.error;
+                fn(message);
+                return;
+            }
+            // Fallback to inline alert banner
+            const alert = document.getElementById('alertMessage');
+            alert.textContent = message;
+            alert.className = `alert ${type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-error'}`;
+            alert.classList.remove('hidden');
+            setTimeout(() => { alert.classList.add('hidden'); }, 5000);
+        }
+    </script>
+</body>
+</html>
